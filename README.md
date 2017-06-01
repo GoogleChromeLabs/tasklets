@@ -221,61 +221,18 @@ In the above example does `A` get exported? We aren't sure. Options:
 
 ### Tasklets being Killed
 
-TODO: Write about how this might be a bad idea, strongly tied to the page lifetime.
-
-It'd be nice to have a policy for tasklets to be killed in order for the browser to free up memory
-if required.  Such a policy might be, after 60 seconds of inactivity and no pending tasks, the
+It could be nice to have a policy for tasklets to be killed in order for the browser to free up memory
+if required. Such a policy might be, after 60 seconds of inactivity and no pending tasks, the
 `TaskWorkletGlobalScope` would be killed.
 
 As a result of this we'd need a callback to allow a class to save state, in order to be resumed with
-the appropriate state. For example:
+the appropriate state.
 
-```js
-// a.js
-export class A {
-  constructor(data, state) {
-    this.multiply = data.multiply;
-    this.i = state.i || 0;
-  }
+With the plan of allowing references to be passed back and forth between main thread and tasklet, this
+will become incredibly complex to implement and reason about.
 
-  compute() {
-    return this.multiple * this.i++;
-  }
-
-  willBeKilled() { // Oh dear - this is a bad name.
-    return {
-      i: this.i,
-    }
-  }
-}
-```
-
-```js
-const api = tasklet.addModule('a.js');
-const a = new api.A({multiply: 2});
-a.compute() == 0;
-
-// "sleep" for 2 mins.
-await new Promise((r) => { setTimeout(r, 120 * 1000); });
-
-a.compute() == 2;
-a.compute() == 4;
-```
-
-In the above example, we'd like the `TaskWorkletGlobalScope` to be destroyed during the "sleep".
-When it gets destroyed all active classes will have their `willBeKilled` method called such that
-they can save their state.
-
-When `a.compute()` gets called for the second time, the `constructor(data, state)` will be called
-again, additionally with the `state` parameter which was structured cloned from the `willBeKilled()`
-method.
-
-There are issues with this however, web developers might try and "ping" the tasklet every few
-seconds to keep it alive, so they don't have to deal with this behaviour, or may not think about
-implementing the `willBeKilled()` method by default.
-
-There needs to be some work here :). It may be enough for browsers to kill just the main page and
-not worry about this complexity.
+It is probably easier and more reasonable/reliable to strongly tie the tasklet’s lifetime
+to the page’s lifetime and kill the tasklet when the page gets killed.
 
 ### Passing References Around
 
