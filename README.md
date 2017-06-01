@@ -194,10 +194,36 @@ This is a very early stage proposal, so it has a few problems that we'll need to
 
 ### Returning references
 
-TODO add example about why returning references is useful + things need to be in same module.
+It will be undoubtedly useful to return instances of object created in the tasklet to the main thread. The
+completely async nature of the proxies, however, make reasoning harder and handling a bit awkward.
 
 ```js
-// TODO add example here. \o/
+// calendarTasklet.js
+export class Calendar {
+  constructor(credentials) { /* ... */ }
+  nextEvents(limit = 10) {
+    /* ... */
+    return arrayOfCalendarEntries;
+  }
+  generateShareLink(id) { /* ... */ }
+  /* ... */
+}
+
+export class CalendarEntry {
+  constructor(calender) { /* ... */ }
+  get id() { /* ... */ }
+  /* ... */
+}
+```
+
+```js
+// main.js
+const {Calendar} = await tasklet.addModule('calendarTasklet.js');
+const myCalendar = new Calendar(myCredentials);
+const events = await myCalendar.next10Events()
+// `event.id` is a promise in main thread, but not in the tasklet.
+// Should/Can this line work?
+events.map(event => myCalender.generateShareLink(event.id));
 ```
 
 ### What gets exported?
