@@ -306,69 +306,6 @@ implementing the `willBeKilled()` method by default.
 There needs to be some work here :). It may be enough for browsers to kill just the main page and
 not worry about this complexity.
 
-### Passing References Around
-
-We think it's interesting that this opens up the capability for passing references of classes (maybe
-also functions?) around. For example:
-
-```js
-// api.js
-export class A {
-  func() { return 42; }
-}
-
-export class B {
-  constructor(a) {
-    this.a = a;
-    this.f = null;
-  }
-
-  setA(a) {
-    this.a = a;
-  }
-
-  runFunction(f) {
-    return f();
-  }
-}
-
-export function four() {
-  return 4;
-}
-```
-
-```js
-const api = await tasklet.addModule('api.js');
-
-const a = new api.A();
-const b = new api.B(a);
-```
-
-In the above example, this passes a "reference" of `A` to `B`. This would be useful if you had
-different parts of a web application using a different network manager class for example. This
-ability to compose is quite common for other threading APIs.
-
-```js
-b.runFunction(api.four);
-```
-
-The above snippet shows how functions could be passed around as well.
-
-The issues with introducing these references into the API. For example allowing them generally means
-that it becomes difficult to reason about the `willBeKilled()` extension described above. (If they
-are part of the structured clone algorithm for tasklets, then they can't cloned during
-`willBeKilled()` as it would be possible to create reference cycles).
-
-One solution would be to only allow them for constructor calls. For example:
-
-```js
-let a = new api.A();
-const b = new api.B(a); // succeeds.
-
-a = new api.A();
-b.setA(a); // fails.
-```
-
 #### Failure Modes
 
 In all of the above code samples, we've had a "synchronous" constructor call. We've just done this
