@@ -222,8 +222,11 @@ const {Calendar} = await tasklet.addModule('calendarTasklet.js');
 const myCalendar = new Calendar(myCredentials);
 const events = await myCalendar.next10Events()
 // `event.id` is a promise in main thread, but not in the tasklet.
-// Should/Can this line work?
+// This line would create a lot of message passing under the hood and could be
+// deceptively expensive.
 events.map(event => myCalender.generateShareLink(event.id));
+// Preferable:
+// myCalender.generateShareLinks(events);
 ```
 
 ### What gets exported?
