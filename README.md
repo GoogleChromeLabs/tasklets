@@ -52,7 +52,7 @@ contexts.
 The below example shows a basic example of the tasklet API.
 
 ```js
-// tasklet.js
+// speaker.js
 export class Speaker {
   sayHello(message) {
     return `Hello ${message}`;
@@ -65,9 +65,9 @@ export function add(a, b) {
 ```
 
 ```js
-const api = await tasklet.addModule('tasklet.js');
+const module = await tasklet.addModule('speaker.js');
 
-const speaker = new api.Speaker();
+const speaker = new module.Speaker();
 console.log(await speaker.sayHello('world!')); // Logs "Hello world!".
 
 console.log(await api.add(2, 3)); // Logs '5'.
