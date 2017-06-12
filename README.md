@@ -194,10 +194,39 @@ This is a very early stage proposal, so it has a few problems that we'll need to
 
 ### Returning references
 
-TODO add example about why returning references is useful + things need to be in same module.
+It will be undoubtedly useful to return instances of object created in the tasklet to the main thread. The
+completely async nature of the proxies, however, make reasoning harder and handling a bit awkward.
 
 ```js
-// TODO add example here. \o/
+// calendarTasklet.js
+export class Calendar {
+  constructor(credentials) { /* ... */ }
+  nextEvents(limit = 10) {
+    /* ... */
+    return arrayOfCalendarEntries;
+  }
+  generateShareLink(id) { /* ... */ }
+  /* ... */
+}
+
+export class CalendarEntry {
+  constructor(calender) { /* ... */ }
+  get id() { /* ... */ }
+  /* ... */
+}
+```
+
+```js
+// main.js
+const {Calendar} = await tasklet.addModule('calendarTasklet.js');
+const myCalendar = new Calendar(myCredentials);
+const events = await myCalendar.next10Events()
+// `event.id` is a promise in main thread, but not in the tasklet.
+// This line would create a lot of message passing under the hood and could be
+// deceptively expensive.
+events.map(event => myCalender.generateShareLink(event.id));
+// Preferable:
+// myCalender.generateShareLinks(events);
 ```
 
 ### What gets exported?
@@ -233,69 +262,6 @@ will become incredibly complex to implement and reason about.
 
 It is probably easier and more reasonable/reliable to strongly tie the tasklet’s lifetime
 to the page’s lifetime and kill the tasklet when the page gets killed.
-
-### Passing References Around
-
-We think it's interesting that this opens up the capability for passing references of classes (maybe
-also functions?) around. For example:
-
-```js
-// api.js
-export class A {
-  func() { return 42; }
-}
-
-export class B {
-  constructor(a) {
-    this.a = a;
-    this.f = null;
-  }
-
-  setA(a) {
-    this.a = a;
-  }
-
-  runFunction(f) {
-    return f();
-  }
-}
-
-export function four() {
-  return 4;
-}
-```
-
-```js
-const api = await tasklet.addModule('api.js');
-
-const a = new api.A();
-const b = new api.B(a);
-```
-
-In the above example, this passes a "reference" of `A` to `B`. This would be useful if you had
-different parts of a web application using a different network manager class for example. This
-ability to compose is quite common for other threading APIs.
-
-```js
-b.runFunction(api.four);
-```
-
-The above snippet shows how functions could be passed around as well.
-
-The issues with introducing these references into the API. For example allowing them generally means
-that it becomes difficult to reason about the `willBeKilled()` extension described above. (If they
-are part of the structured clone algorithm for tasklets, then they can't cloned during
-`willBeKilled()` as it would be possible to create reference cycles).
-
-One solution would be to only allow them for constructor calls. For example:
-
-```js
-let a = new api.A();
-const b = new api.B(a); // succeeds.
-
-a = new api.A();
-b.setA(a); // fails.
-```
 
 #### Failure Modes
 
