@@ -79,8 +79,8 @@ A few things are happening here, so let's step through them individually.
 const api = await tasklet.addModule('tasklet.js');
 ```
 
-This loads the module into the tasklet's JavaScript global scope. This is similar to invoking
-`new Worker('tasklet.js')`.
+This loads the module into the tasklet's javascript global scope. This is similar to invoking
+`new Worker('tasklet.js')`. Also similar to WebWorkers, the tasklet would be around for the lifetime of the page.
 
 However, when this module is loaded, the browser will look into the script you imported and find all
 of the __exported__ classes and functions. In the above example we only exported the `Speaker`
@@ -248,22 +248,7 @@ In the above example does `A` get exported? We aren't sure. Options:
   3. Remove the magic auto exposing, rely on explicit listing of things to expose.
   4. WebIDL
 
-### Tasklets being killed
-
-It could be nice to have a policy for tasklets to be killed in order for the browser to free up memory
-if required. Such a policy might be, after 60 seconds of inactivity and no pending tasks, the
-`TaskWorkletGlobalScope` would be killed.
-
-As a result of this we'd need a callback to allow a class to save state, in order to be resumed with
-the appropriate state.
-
-With the plan of allowing references to be passed back and forth between main thread and tasklet, this
-will become incredibly complex to implement and reason about.
-
-It is probably easier and more reasonable/reliable to strongly tie the tasklet’s lifetime
-to the page’s lifetime and kill the tasklet when the page gets killed.
-
-#### Failure modes
+#### Failure Modes
 
 In all of the above code samples, we've had a "synchronous" constructor call. We've just done this
 because we think it's easier to use, but this brings up the question:
@@ -285,32 +270,3 @@ a.func(); // Fails, as we couldn't create the underlying class.
 
 We think this is OK. It also handles cases above where if a class is killed and couldn't be
 recreated the behavior is sane.
-
-### Javascript integration
-
-We think it'd be nice if there was first class JavaScript support for the tasklet API. Here is one
-reasonably simple proposal:
-
-```js
-const api = await remote {
-  import foo from 'foo.js';
-
-  export class A {
-    func() {
-      foo();
-      return 42;
-    }
-  }
-};
-
-const a = new api.A();
-a.func() == 42;
-```
-
-Here everything in the "remote" block is treated like a separate ES6 module file. This would run in
-the default `tasklet`. We'd also like support to run the above code in a "named" tasklet.
-
-A proposal that wouldn't work would be something like: `remote@my-tasklet { }`. (But we'd like
-something like this.)
-
-The above snippet has the downside that it would need to be parsed twice in a naïve implementation.
