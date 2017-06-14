@@ -8,22 +8,41 @@ for work is:
 iOS and Android native platforms, for example, restrict (by default) the usage of any APIs not
 critical to UI manipulation on the main thread.
 
-The web has support for this model via `WebWorkers`, though the `postMessage()` interface is clunky
-and difficult to use. As a result, worker adoption has been minimal at best and the default model
-remains to put all work on the main thread. In order to encourage developers to move work off the
-main thread, we need a more ergonomic solution.
+The web has support for this model via `WebWorkers`. However:
 
-In anticipation of increased usage of threads, we will also need a solution that scales well with
-regards to resource usage. Workers require ~5MB per thread. This proposal suggests using worklets as
-the fundamental execution context to better support a world where multiple parties are using
-threading heavily.
+* `postMessage()` is clunky and difficult to use
+* WebWorkers are expensive (~5MB per thread)
+
+As a result, worker adoption has been minimal at best and the default model
+remains to put all work on the main thread. In order to encourage developers to move work off the
+main thread, we propose a more ergonomic solution with Tasklets.
 
 # Tasklet API
 
 __Note__: APIs described below are just strawperson proposals. We think they're pretty cool but
     there's always room for improvement.
 
-Today, many uses of `WebWorkers` follow a structure similar to:
+**TL,DR:**
+
+```js
+// fetcher.js
+export async function fetchDataObject() {
+    const resp = await fetch(/*...*/)
+    const json = await resp.json();
+    return doSomeExpensiveProcessing(json);
+}
+```
+
+```js
+// app.js
+const fetcher = await tasklet.addModule('fetcher.js');
+const json = await fetcher.fetchDataObject();
+// ...
+```
+
+## Problem
+
+Today, many uses of WebWorkers follow a structure similar to:
 
 ```js
 const worker = new Worker('worker.js');
@@ -111,14 +130,7 @@ All of the functions now return promises, for example:
 const p = speaker.sayHello('world!');
 ```
 
-A web developer can trigger multiple function calls at the some time, e.g.
-
-```js
-const results = await Promise.all([
-    speaker.sayHello('world!'),
-    speaker.sayHello('mars!')
-]);
-```
+### Supported parameter and return values
 
 All arguments and return values go through the structured clone algorithm, which means that
 functions can only accept certain kinds of objects, for example:
@@ -127,25 +139,7 @@ functions can only accept certain kinds of objects, for example:
 speaker.sayHello(document.body); // Causes a DOMException as HTMLBodyElement cannot be cloned.
 ```
 
-We believe that this is a far easier mechanism for web developers to use additional threads in their
-web pages/applications.
-
-## Into the weeds
-
-We'll quickly go through some more detailed cases here. We haven't fully formed everything here yet.
-
-### APIs exposed
-
-We believe that all __asynchronous__ APIs which are exposed in workers should be exposed in the
-`TaskWorkletGlobalScope`. (Sync XHR, etc, would not be exposed). Additionally `Atomics.wait` would
-throw a `TypeError`.
-
-We want this characteristic as we'd like to potentially run multiple tasklets in the same thread.
-Some implementations have a high overhead per thread, but a smaller cost per JavaScript environment.
-
-### Transferables
-
-We think that everything should transfer by default, e.g:
+As for transferrables, we think that every parameter and return value should be transferred by default, e.g:
 
 ```js
 const arr = new Int8Array(100);
@@ -158,6 +152,19 @@ If web developers need copying behavior instead, they are able to make a copy in
 ```js
 api.someFunction(new Int8Array(arr));
 ```
+
+## Into the weeds
+
+We'll quickly go through some more detailed cases here. We haven't fully formed everything here yet.
+
+### APIs Exposed
+
+We believe that all __asynchronous__ APIs which are exposed in workers should be exposed in the
+`TaskWorkletGlobalScope` (that means Sync XHR for example would not be exposed). Additionally `Atomics.wait` would
+throw a `TypeError`.
+
+We want this characteristic as we'd like to potentially run multiple tasklets in the same thread.
+Some implementations have a high overhead per thread, but a smaller cost per javascript environment.
 
 ### Events
 
@@ -194,7 +201,7 @@ This is a very early stage proposal, so it has a few problems that we'll need to
 
 ### Returning references
 
-It will undoubtedly be useful to return instances of objects created in the tasklet to the main thread. The
+It will undoubtedly be useful to return instances of objects created in the tasklet. The
 completely async nature of the proxies, however, make reasoning harder and handling a bit awkward.
 
 ```js
@@ -220,21 +227,17 @@ export class CalendarEntry {
 // main.js
 const {Calendar} = await tasklet.addModule('calendarTasklet.js');
 const myCalendar = new Calendar(myCredentials);
-const events = await myCalendar.next10Events()
-// `event.id` is a promise in main thread, but not in the tasklet.
-// This line would create a lot of message passing under the hood and could be
-// deceptively expensive.
-events.map(event => myCalender.generateShareLink(event.id));
-// Preferable:
-// myCalender.generateShareLinks(events);
+const events = await myCalendar.nextEvents()
+events.map(event => myCalender.generateShareLink(event.id)); // !!!
 ```
+
+The last line is potentially problematic. `event.id` has been promisified. This line would create a lot of message passing under the hood: Every invocation of the `map()` callback would have to wait for `event.id` to resolve just pass a message back to the tasklet to invoke `generateShareLink`.
+
+This can be solved by the author by architecting their tasklet appropriately. A method like `myCalender.generateShareLinks(events)` for example would be much more efficient.
 
 ### What gets exported?
 
-`¯\_(ツ)_/¯`
-
-We actually don't know. For example:
-
+Consider this tasklet code:
 
 ```js
 import {A} from 'a.js';
@@ -242,10 +245,12 @@ import {A} from 'a.js';
 export class B extends A {}
 ```
 
-In the above example does `A` get exported? We aren't sure. Options:
-  1. Export everything down the to Object prototype.
-  2. Only export things declared in the class?
-  3. Remove the magic auto exposing, rely on explicit listing of things to expose.
+What gets exported?
+
+`¯\_(ツ)_/¯` We aren't sure. Options:
+  1. Export everything down the to `Object` prototype.
+  2. Only export things declared in the class (i.e. everything from `B`, but not `A`)
+  3. Don’t do magic – rely on explicit listing of things to expose (á la `static get exportedProperties() { return [/*...*/]; }`)
   4. WebIDL
 
 #### Failure Modes
