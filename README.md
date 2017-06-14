@@ -47,9 +47,9 @@ A switch statement in the worker then typically routes messages to the correct A
 exposes this behavior natively, by allowing a class within one context to expose methods to other
 contexts.
 
-## Exported Classes and Functions
+## Exported classes and functions
 
-The below example shows a basic example of the tasklet API.
+The code below shows a basic example of the tasklet API.
 
 ```js
 // speaker.js
@@ -73,21 +73,21 @@ console.log(await speaker.sayHello('world!')); // Logs "Hello world!".
 console.log(await api.add(2, 3)); // Logs '5'.
 ```
 
-A few things are happening here - so lets step through them individually.
+A few things are happening here, so let's step through them individually.
 
 ```js
 const api = await tasklet.addModule('tasklet.js');
 ```
 
-This loads the module into the tasklets javascript global scope. This is similar to invoking
+This loads the module into the tasklet's JavaScript global scope. This is similar to invoking
 `new Worker('tasklet.js')`.
 
 However, when this module is loaded, the browser will look into the script you imported and find all
 of the __exported__ classes and functions. In the above example we only exported the `Speaker`
 class.
 
-`addModule` returns a "namespace" object, which the browser has created "proxy" constructors and
-functions. I.e.
+`addModule` returns a "namespace" object, for which the browser creates "proxy" constructors and
+functions:
 
 ```js
 api.Speaker.toString() == 'function Speaker() { [native code] }';
@@ -134,14 +134,14 @@ web pages/applications.
 
 We'll quickly go through some more detailed cases here. We haven't fully formed everything here yet.
 
-### APIs Exposed
+### APIs exposed
 
 We believe that all __asynchronous__ APIs which are exposed in workers should be exposed in the
 `TaskWorkletGlobalScope`. (Sync XHR, etc, would not be exposed). Additionally `Atomics.wait` would
 throw a `TypeError`.
 
 We want this characteristic as we'd like to potentially run multiple tasklets in the same thread.
-Some implementations have a high overhead per thread, but a smaller cost per javascript environment.
+Some implementations have a high overhead per thread, but a smaller cost per JavaScript environment.
 
 ### Transferables
 
@@ -153,7 +153,7 @@ api.someFunction(arr);
 // arr has now been transferred, you can't access it.
 ```
 
-If web developers need copying behaviour instead, they are able to make a copy in the call, e.g:
+If web developers need copying behavior instead, they are able to make a copy in the call, e.g:
 
 ```js
 api.someFunction(new Int8Array(arr));
@@ -194,7 +194,7 @@ This is a very early stage proposal, so it has a few problems that we'll need to
 
 ### Returning references
 
-It will be undoubtedly useful to return instances of object created in the tasklet to the main thread. The
+It will undoubtedly be useful to return instances of objects created in the tasklet to the main thread. The
 completely async nature of the proxies, however, make reasoning harder and handling a bit awkward.
 
 ```js
@@ -233,7 +233,7 @@ events.map(event => myCalender.generateShareLink(event.id));
 
 `¯\_(ツ)_/¯`
 
-We actually don't know. E.g.
+We actually don't know. For example:
 
 
 ```js
@@ -248,7 +248,7 @@ In the above example does `A` get exported? We aren't sure. Options:
   3. Remove the magic auto exposing, rely on explicit listing of things to expose.
   4. WebIDL
 
-### Tasklets being Killed
+### Tasklets being killed
 
 It could be nice to have a policy for tasklets to be killed in order for the browser to free up memory
 if required. Such a policy might be, after 60 seconds of inactivity and no pending tasks, the
@@ -263,10 +263,10 @@ will become incredibly complex to implement and reason about.
 It is probably easier and more reasonable/reliable to strongly tie the tasklet’s lifetime
 to the page’s lifetime and kill the tasklet when the page gets killed.
 
-#### Failure Modes
+#### Failure modes
 
 In all of the above code samples, we've had a "synchronous" constructor call. We've just done this
-because we think its easier to use, but this brings up the question:
+because we think it's easier to use, but this brings up the question:
 
 ```js
 // api.js
@@ -283,12 +283,12 @@ const a = new api.A(); // Succeeds.
 a.func(); // Fails, as we couldn't create the underlying class.
 ```
 
-We think this is OK, it also handles cases above where if a class is killed and couldn't be
-re-created the behaviour is sane.
+We think this is OK. It also handles cases above where if a class is killed and couldn't be
+recreated the behavior is sane.
 
-### Javascript Integration
+### Javascript integration
 
-We think it'd be nice if there was first class javascript support for the tasklet API, here is one
+We think it'd be nice if there was first class JavaScript support for the tasklet API. Here is one
 reasonably simple proposal:
 
 ```js
@@ -311,7 +311,6 @@ Here everything in the "remote" block is treated like a separate ES6 module file
 the default `tasklet`. We'd also like support to run the above code in a "named" tasklet.
 
 A proposal that wouldn't work would be something like: `remote@my-tasklet { }`. (But we'd like
-something like this).
+something like this.)
 
 The above snippet has the downside that it would need to be parsed twice in a naïve implementation.
-
