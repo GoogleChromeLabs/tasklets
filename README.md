@@ -201,7 +201,7 @@ This is a very early stage proposal, so it has a few problems that we'll need to
 
 ### Returning references
 
-It will undoubtedly be undoubtedly useful to return instances of objects created in the tasklet. The
+It will undoubtedly be useful to return instances of objects created in the tasklet. The
 completely async nature of the proxies, however, make reasoning harder and handling a bit awkward.
 
 ```js
@@ -231,7 +231,7 @@ const events = await myCalendar.nextEvents()
 events.map(event => myCalender.generateShareLink(event.id)); // !!!
 ```
 
-The last line is potentially problematic. `event.id` has been promisified. This line would create a lot of message passing under the hood: Every invocation of the `map()` callback would have to wait for `event.id` to resolve just pass a message back to the taskelt to invoke `generateShareLink`.
+The last line is potentially problematic. `event.id` has been promisified. This line would create a lot of message passing under the hood: Every invocation of the `map()` callback would have to wait for `event.id` to resolve just pass a message back to the tasklet to invoke `generateShareLink`.
 
 This can be solved by the author by architecting their tasklet appropriately. A method like `myCalender.generateShareLinks(events)` for example would be much more efficient.
 
