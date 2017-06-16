@@ -11,7 +11,7 @@ critical to UI manipulation on the main thread.
 The web has support for this model via `WebWorkers`. However:
 
 * `postMessage()` is clunky and difficult to use
-* WebWorkers are expensive (~5MB per thread)
+* WebWorkers can be expensive (e.g: ~5MB per thread in Chrome)
 
 As a result, worker adoption has been minimal at best and the default model remains to put all work
 on the main thread. In order to encourage developers to move work off the main thread, we propose a
