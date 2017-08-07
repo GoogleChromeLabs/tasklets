@@ -19,7 +19,7 @@ describe('Tasklet Polyfill', function() {
 
   it('can invoke an exported function', async function() {
     const tasklet = await tasklets.addModule('/base/tests/fixtures/simple_function.js');
-    expect(Object.keys(tasklet)).to.deep.equal(['simpleFunction'])
+    expect(Object.keys(tasklet)).to.contain('simpleFunction');
     expect(await tasklet.simpleFunction()).to.equal(42);
   });
 
@@ -27,6 +27,27 @@ describe('Tasklet Polyfill', function() {
     const tasklet = await tasklets.addModule('/base/tests/fixtures/simple_class.js');
     const instance = new tasklet.SimpleClass();
     expect(await instance.getAnswer()).to.equal(42);
+  });
+
+  it('can transfer a buffer', async function() {
+    const tasklet = await tasklets.addModule('/base/tests/fixtures/simple_function.js');
+    expect(Object.keys(tasklet)).to.contain('takesABuffer');
+    const typedArr = new Uint8Array([1, 2, 3]);
+    expect(await tasklet.takesABuffer(typedArr.buffer)).to.equal(3);
+    expect(typedArr.length).to.equal(0);
+  });
+
+  it('can transfer a message port', async function() {
+    const tasklet = await tasklets.addModule('/base/tests/fixtures/simple_function.js');
+    expect(Object.keys(tasklet)).to.contain('takesAMessagePort');
+    const {port1, port2} = new MessageChannel();
+    tasklet.takesAMessagePort(port1);
+    return new Promise(resolve => {
+      port2.onmessage = event => {
+        event.data === 'pong';
+        resolve();
+      };
+    });
   });
 
   xit('can access properties of instantiated classes', async function() {
