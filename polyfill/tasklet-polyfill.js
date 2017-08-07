@@ -37,20 +37,22 @@
     return proxy;
   }
 
-  class Tasklet {
+  class Tasklets {
     constructor(worker) {
       this._worker = worker;
     }
 
     async addModule(path) {
       const response = await pingPongMessage(this._worker, {
-        type: 'LOAD',
         path,
       });
-      if(response.data.type === 'ERROR')
+      if('error' in response.data)
         throw Error(response.data.error);
 
+
       const that = this;
+      const port = response.data.port;
+      port.start();
       const proxyCollection = {};
       for(const exportName of event.data.structure) {
         proxyCollection[exportName] = new Proxy(function(){}, {
@@ -58,7 +60,7 @@
             // TODO: Actually walk the entire tree
             const transferableArguments = argumentsList.filter(val => isTransferable(val));
             const response = await pingPongMessage(
-              that._worker,
+              port,
               {
                 path,
                 exportName,
@@ -70,13 +72,15 @@
           construct(_, argumentsList, __) {
             const {port1, port2} = new MessageChannel();
             port1.start();
-            pingPongMessage(that._worker, {
-              path,
-              exportName,
-              type: 'CONSTRUCT',
-              argumentsList,
-              port: port2,
-            }, [port2]);
+            pingPongMessage(
+              port,
+              {
+                path,
+                exportName,
+                type: 'CONSTRUCT',
+                argumentsList,
+                port: port2,
+              }, [port2]);
             return makeItAProxyAllTheWayDown(port1);
           },
         });
@@ -95,5 +99,5 @@
   scriptURL.pathname = `${parts.join('/')}/tasklet-worker-env.js`;
   scriptURL.search = '';
   const worker = new Worker(scriptURL.toString());
-  self.tasklets = new Tasklet(worker);
+  self.tasklets = new Tasklets(worker);
 })();

@@ -1,73 +1,85 @@
-class Tasklet {
+class TaskletModule {
+  constructor() {
+    this._exports = {};
+    this.onmessage = this.onmessage.bind(this);
+  }
+
   export(obj) {
-    this[obj.name] = obj;
+    this._exports[obj.name] = obj;
     // TODO: Exports with same name?!
+  }
+
+  get port() {
+    return this._port;
+  }
+
+  set port(val) {
+    this._port = val;
+    this._port.onmessage = this.onmessage;
+  }
+
+  onmessage(event) {
+    switch(event.data.type) {
+      case 'APPLY': {
+        const method = this._exports[event.data.exportName];
+        const result = method.apply(null, event.data.argumentsList);
+        this.port.postMessage({
+          id: event.data.id,
+          result,
+        });
+        break;
+      }
+      case 'CONSTRUCT': {
+        const constructor = this._exports[event.data.exportName];
+        const instance = new constructor(...event.data.argumentsList);
+        const port = event.data.port;
+        event.data.port.addEventListener('message', event => {
+          switch(event.data.type) {
+            case 'APPLY':
+              const result = event.data.callPath.reduce((instance, property, idx) => {
+                if(idx === event.data.callPath.length - 1)
+                  return instance[property].apply(instance, event.data.argumentsList);
+                return instance[property];
+              }, instance);
+              port.postMessage({
+                id: event.data.id,
+                result,
+              });
+              break;
+            default:
+              throw Error(`Unknown message type "${event.data.type}"`);
+          }
+        });
+        port.start();
+        break;
+      }
+    }
+  }
+
+  get structure() {
+    return Object.keys(this._exports);
   }
 }
 
-registry = new Map();
-
 addEventListener('message', event => {
-  switch(event.data.type) {
-    case 'LOAD':
-      try {
-        if(registry.has(event.data.path))
-          break;
+  try {
+    const module = new TaskletModule();
 
-        self.tasklets = new Tasklet();
-        importScripts(event.data.path);
-        registry.set(event.data.path, self.tasklets);
-        delete self.tasklets;
-        break;
-      } catch(error) {
-        postMessage({
-          type: 'ERROR',
-          path: event.data.path,
-          error: error.toString(),
-        });
-      }
-      break;
-    case 'APPLY': {
-      const tasklet = registry.get(event.data.path);
-      const result = tasklet[event.data.exportName].apply(null, event.data.argumentsList);
-      postMessage({
-        id: event.data.id,
-        result,
-      });
-      break;
-    }
-    case 'CONSTRUCT': {
-      const tasklet = registry.get(event.data.path);
-      const constructor = tasklet[event.data.exportName];
-      const instance = new constructor(...event.data.argumentsList);
-      const port = event.data.port;
-      event.data.port.addEventListener('message', event => {
-        switch(event.data.type) {
-          case 'APPLY':
-            const result = event.data.callPath.reduce((instance, property, idx) => {
-              if(idx === event.data.callPath.length - 1)
-                return instance[property].apply(instance, event.data.argumentsList);
-              return instance[property];
-            }, instance);
-            port.postMessage({
-              id: event.data.id,
-              result,
-            });
-            break;
-          default:
-            throw Error(`Unknown message type "${event.data.type}"`);
-        }
-      });
-      port.start();
-      break;
-    }
-    default:
-      throw Error(`Unknown message type "${event.data.type}"`);
+    self.tasklets = module;
+    importScripts(event.data.path);
+    delete self.tasklets;
+
+    const {port1, port2} = new MessageChannel();
+    module.port = port1;
+    postMessage({
+      id: event.data.id,
+      port: port2,
+      structure: module.structure,
+    }, [port2]);
+  } catch(error) {
+    postMessage({
+      id: event.data.id,
+      error: error.toString(),
+    });
   }
-  postMessage({
-    type: 'LOAD_SUCCESSFUL',
-    id: event.data.id,
-    path: event.data.path,
-    structure: Object.keys(registry.get(event.data.path)),
-  });
 });
