@@ -1,0 +1,15 @@
+<!doctype html>
+<script type="module">
+  import {Tasklet} from '../tasklet-main-polyfill.js';
+
+  const taskletWorker = new Worker('../tasklet-worker-polyfill.js');
+  const tasklets = new Tasklet(taskletWorker);
+
+  (async function() {
+    const myTasklet = await tasklets.addModule('/polyfill/example/my-tasklet.js');
+    console.log(myTasklet);
+    // const remoteClass = new myTasklet.GreatClass();
+    // console.log(await remoteClass.tremendousMethod());
+    console.log(await myTasklet.abc());
+  })();
+</script>
