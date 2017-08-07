@@ -27,7 +27,7 @@ addEventListener('message', event => {
         });
       }
       break;
-    case 'APPLY':
+    case 'APPLY': {
       const tasklet = registry.get(event.data.path);
       const result = tasklet[event.data.exportName].apply(null, event.data.argumentsList);
       postMessage({
@@ -35,6 +35,32 @@ addEventListener('message', event => {
         result,
       });
       break;
+    }
+    case 'CONSTRUCT': {
+      const tasklet = registry.get(event.data.path);
+      const constructor = tasklet[event.data.exportName];
+      const instance = new constructor(...event.data.argumentsList);
+      const port = event.data.port;
+      event.data.port.addEventListener('message', event => {
+        switch(event.data.type) {
+          case 'APPLY':
+            const result = event.data.callPath.reduce((instance, property, idx) => {
+              if(idx === event.data.callPath.length - 1)
+                return instance[property].apply(instance, event.data.argumentsList);
+              return instance[property];
+            }, instance);
+            port.postMessage({
+              id: event.data.id,
+              result,
+            });
+            break;
+          default:
+            throw Error(`Unknown message type "${event.data.type}"`);
+        }
+      });
+      port.start();
+      break;
+    }
     default:
       throw Error(`Unknown message type "${event.data.type}"`);
   }

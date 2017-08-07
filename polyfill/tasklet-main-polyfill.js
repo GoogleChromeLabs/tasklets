@@ -17,6 +17,25 @@ function isTransferable(thing) {
     (thing instanceof MessagePort);
 }
 
+function makeItAProxyAllTheWayDown(port) {
+  let callPath = [];
+  const proxy = new Proxy(function() {}, {
+    async apply(_, __, argumentsList) {
+      const response = await pingPongMessage(port, {
+        type: 'APPLY',
+        callPath,
+        argumentsList,
+      });
+      return response.data.result;
+    },
+    get(_, property, __) {
+      callPath.push(property);
+      return proxy;
+    },
+  });
+  return proxy;
+}
+
 export class Tasklet {
   constructor(worker) {
     this._worker = worker;
@@ -34,7 +53,7 @@ export class Tasklet {
     const proxyCollection = {};
     for(const exportName of event.data.structure) {
       proxyCollection[exportName] = new Proxy(function(){}, {
-        async apply(_, thisArg, argumentsList) {
+        async apply(_, __, argumentsList) {
           // TODO: Actually walk the entire tree
           const transferableArguments = argumentsList.filter(val => isTransferable(val));
           const response = await pingPongMessage(
@@ -43,21 +62,22 @@ export class Tasklet {
               path,
               exportName,
               type: 'APPLY',
-              // thisArg,
               argumentsList,
             }, transferableArguments);
           return response.data.result;
         },
-        // async construct(_, argumentsList, newTarget) {
-        //   const response = await pingPongMessage(that._worker, {
-        //     path,
-        //     exportName,
-        //     type: 'CONSTRUCT',
-        //     // thisArg,
-        //     argumentsList,
-        //   });
-        //   return response.data.result;
-        // },
+        construct(_, argumentsList, __) {
+          const {port1, port2} = new MessageChannel();
+          port1.start();
+          pingPongMessage(that._worker, {
+            path,
+            exportName,
+            type: 'CONSTRUCT',
+            argumentsList,
+            port: port2,
+          }, [port2]);
+          return makeItAProxyAllTheWayDown(port1);
+        },
       });
     }
     return proxyCollection;

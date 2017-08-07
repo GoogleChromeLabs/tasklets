@@ -1,10 +1,10 @@
-tasklets.export(class API {
+tasklets.export(class GreatClass {
   constructor() {
     this._state = 42;
   }
 
   tremendousMethod() {
-    return `The answer is ${this._state}`;
+    return 'This is a magnificient string';
   }
 });
 
