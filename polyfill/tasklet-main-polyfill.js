@@ -1,4 +1,4 @@
-function pingPongMessage(target, msg) {
+function pingPongMessage(target, msg, transferables) {
   const id = performance.now();
 
   return new Promise(resolve => {
@@ -7,8 +7,14 @@ function pingPongMessage(target, msg) {
       target.removeEventListener('message', handler);
       resolve(event);
     });
-    target.postMessage(Object.assign(msg, {id}));
+    target.postMessage(Object.assign(msg, {id}), transferables);
   });
+}
+
+function isTransferable(thing) {
+  return (thing instanceof ArrayBuffer) ||
+    (thing instanceof ImageBitmap) ||
+    (thing instanceof MessagePort);
 }
 
 export class Tasklet {
@@ -29,16 +35,29 @@ export class Tasklet {
     for(const exportName of event.data.structure) {
       proxyCollection[exportName] = new Proxy(function(){}, {
         async apply(_, thisArg, argumentsList) {
-          // TODO: Handle transferables
-          const response = await pingPongMessage(that._worker, {
-            path,
-            exportName,
-            type: 'APPLY',
-            // thisArg,
-            argumentsList,
-          });
+          // TODO: Actually walk the entire tree
+          const transferableArguments = argumentsList.filter(val => isTransferable(val));
+          const response = await pingPongMessage(
+            that._worker,
+            {
+              path,
+              exportName,
+              type: 'APPLY',
+              // thisArg,
+              argumentsList,
+            }, transferableArguments);
           return response.data.result;
-        }
+        },
+        // async construct(_, argumentsList, newTarget) {
+        //   const response = await pingPongMessage(that._worker, {
+        //     path,
+        //     exportName,
+        //     type: 'CONSTRUCT',
+        //     // thisArg,
+        //     argumentsList,
+        //   });
+        //   return response.data.result;
+        // },
       });
     }
     return proxyCollection;

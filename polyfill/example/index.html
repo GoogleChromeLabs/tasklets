@@ -11,5 +11,9 @@
     // const remoteClass = new myTasklet.GreatClass();
     // console.log(await remoteClass.tremendousMethod());
     console.log(await myTasklet.abc());
+
+    const buffer = new Uint8Array([1, 2, 3]).buffer;
+    console.log(await myTasklet.takesABuffer(buffer));
+    console.log(buffer);
   })();
 </script>

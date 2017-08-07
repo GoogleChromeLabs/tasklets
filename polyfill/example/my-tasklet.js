@@ -11,3 +11,7 @@ tasklets.export(class API {
 tasklets.export(function abc() {
   return 'The alphabet!';
 });
+
+tasklets.export(function takesABuffer(buf) {
+  return new Uint8Array(buf).map(b => b + 1).join(' ');
+});
