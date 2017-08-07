@@ -1,10 +1,6 @@
 <!doctype html>
-<script type="module">
-  import {Tasklet} from '../tasklet-main-polyfill.js';
-
-  const taskletWorker = new Worker('../tasklet-worker-polyfill.js');
-  const tasklets = new Tasklet(taskletWorker);
-
+<script src="../tasklet-polyfill.js"></script>
+<script>
   (async function() {
     const myTasklet = await tasklets.addModule('/polyfill/example/my-tasklet.js');
     console.log(await myTasklet.abc());

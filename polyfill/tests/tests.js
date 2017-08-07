@@ -1,38 +1,37 @@
 const expect = chai.expect;
 
 describe('Tasklet Polyfill', function() {
-  beforeEach(async function() {
-    const {Tasklet} = await importPolyfill(`/base/tasklet-main-polyfill.js`);
-    this.taskletWorker = new Worker('/base/tasklet-worker-polyfill.js');
-    this.tasklet = new Tasklet(this.taskletWorker);
+  beforeEach(function(done) {
+    const script = document.createElement('script');
+    script.src = '/base/tasklet-polyfill.js';
+    script.onload = _ => done();
+    document.head.appendChild(script);
   });
 
   afterEach(function() {
-    this.taskletWorker.terminate();
+    tasklets.terminate();
   });
 
   it('can load an empty tasklet file', async function() {
-    const tasklet = await this.tasklet.addModule('/base/tests/fixtures/empty_tasklet.js');
+    const tasklet = await tasklets.addModule('/base/tests/fixtures/empty_tasklet.js');
+    expect(Object.keys(tasklet)).to.have.length(0);
   });
 
   it('can invoke an exported function', async function() {
-    const tasklet = await this.tasklet.addModule('/base/tests/fixtures/simple_function.js');
+    const tasklet = await tasklets.addModule('/base/tests/fixtures/simple_function.js');
+    expect(Object.keys(tasklet)).to.deep.equal(['simpleFunction'])
     expect(await tasklet.simpleFunction()).to.equal(42);
   });
-});
 
-_registry = {};
-importPolyfill = path => {
-  if(!(path in _registry)) {
-    const entry = _registry[path] = {};
-    entry.promise = new Promise(resolve => entry.resolve = resolve);
-    document.head.appendChild(Object.assign(
-      document.createElement('script'),
-      {
-        type: 'module',
-        innerText: `import * as X from '${path}'; _registry['${path}'].resolve(X);`,
-      }
-    ));
-  }
-  return _registry[path].promise;
-}
+  it('can instantiate an exported class', async function() {
+    const tasklet = await tasklets.addModule('/base/tests/fixtures/simple_class.js');
+    const instance = new tasklet.SimpleClass();
+    expect(await instance.getAnswer()).to.equal(42);
+  });
+
+  xit('can access properties of instantiated classes', async function() {
+    const tasklet = await tasklets.addModule('/base/tests/fixtures/simple_class.js');
+    const instance = new tasklet.SimpleClass();
+    expect(await instance._answer).to.equal(42);
+  });
+});

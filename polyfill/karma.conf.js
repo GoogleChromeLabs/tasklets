@@ -4,7 +4,11 @@ const configuration = {
     frameworks: ['mocha'],
     files: [
       {
-        pattern: 'tasklet-*.js',
+        pattern: 'tasklet-polyfill.js',
+        included: false,
+      },
+      {
+        pattern: 'tasklet-worker-env.js',
         included: false,
       },
       {
