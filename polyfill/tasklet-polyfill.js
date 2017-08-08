@@ -30,6 +30,13 @@
         return response.data.result;
       },
       get(_, property, __) {
+        if(property === 'then') {
+          const p = pingPongMessage(port, {
+            type: 'GET',
+            callPath,
+          }).then(response => response.data.result);
+          return p.then.bind(p);
+        }
         callPath.push(property);
         return proxy;
       },
@@ -65,7 +72,6 @@
       for(const exportName of event.data.structure) {
         proxyCollection[exportName] = new Proxy(function(){}, {
           async apply(_, __, argumentsList) {
-            // TODO: Actually walk the entire tree
             const transferableArguments = Array.from(iterateAllProperties(argumentsList)).filter(val => isTransferable(val));
             const response = await pingPongMessage(
               port,

@@ -35,7 +35,7 @@ class TaskletModule {
         const port = event.data.port;
         event.data.port.addEventListener('message', event => {
           switch(event.data.type) {
-            case 'APPLY':
+            case 'APPLY': {
               const result = event.data.callPath.reduce((instance, property, idx) => {
                 if(idx === event.data.callPath.length - 1)
                   return instance[property].apply(instance, event.data.argumentsList);
@@ -46,6 +46,15 @@ class TaskletModule {
                 result,
               });
               break;
+            }
+            case 'GET': {
+              const result = event.data.callPath.reduce((instance, property) => instance[property], instance);
+              port.postMessage({
+                id: event.data.id,
+                result,
+              });
+              break;
+            }
             default:
               throw Error(`Unknown message type "${event.data.type}"`);
           }

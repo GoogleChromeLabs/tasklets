@@ -58,7 +58,7 @@ describe('Tasklet Polyfill', function() {
     });
   });
 
-  xit('can access properties of instantiated classes', async function() {
+  it('can access properties of instantiated classes', async function() {
     const tasklet = await tasklets.addModule('/base/tests/fixtures/simple_class.js');
     const instance = new tasklet.SimpleClass();
     expect(await instance._answer).to.equal(42);
