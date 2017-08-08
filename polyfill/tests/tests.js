@@ -77,4 +77,28 @@ describe('Tasklet Polyfill', function() {
     const instance = new tasklet.SimpleClass();
     expect(await instance.answerGetter).to.equal(43);
   });
+
+  it('can return promises from functions', async function() {
+    const tasklet = await tasklets.addModule('/base/tests/fixtures/simple_function.js');
+    expect(Object.keys(tasklet)).to.contain('returnsAPromise');
+    expect(await tasklet.returnsAPromise(4)).to.equal(5);
+  });
+
+  it('can return promises from instance methods', async function() {
+    const tasklet = await tasklets.addModule('/base/tests/fixtures/simple_class.js');
+    const instance = new tasklet.SimpleClass();
+    expect(await instance.returnsAPromise(4)).to.equal(5);
+  });
+
+  it('can return promises from instance properties ', async function() {
+    const tasklet = await tasklets.addModule('/base/tests/fixtures/simple_class.js');
+    const instance = new tasklet.SimpleClass();
+    expect(await instance.isAPromise).to.equal(4);
+  });
+
+  it('can return promises from instance getters ', async function() {
+    const tasklet = await tasklets.addModule('/base/tests/fixtures/simple_class.js');
+    const instance = new tasklet.SimpleClass();
+    expect(await instance.isAPromiseGetter).to.equal(4);
+  });
 });

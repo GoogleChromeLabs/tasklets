@@ -18,11 +18,11 @@ class TaskletModule {
     this._port.onmessage = this.onmessage;
   }
 
-  onmessage(event) {
+  async onmessage(event) {
     switch(event.data.type) {
       case 'APPLY': {
         const method = this._exports[event.data.exportName];
-        const result = method.apply(null, event.data.argumentsList);
+        const result = await method.apply(null, event.data.argumentsList);
         this.port.postMessage({
           id: event.data.id,
           result,
@@ -33,10 +33,10 @@ class TaskletModule {
         const constructor = this._exports[event.data.exportName];
         const instance = new constructor(...event.data.argumentsList);
         const port = event.data.port;
-        event.data.port.addEventListener('message', event => {
+        event.data.port.addEventListener('message', async event => {
           switch(event.data.type) {
             case 'APPLY': {
-              const result = event.data.callPath.reduce((instance, property, idx) => {
+              const result = await event.data.callPath.reduce((instance, property, idx) => {
                 if(idx === event.data.callPath.length - 1)
                   return instance[property].apply(instance, event.data.argumentsList);
                 return instance[property];
@@ -48,7 +48,7 @@ class TaskletModule {
               break;
             }
             case 'GET': {
-              const result = event.data.callPath.reduce((instance, property) => instance[property], instance);
+              const result = await event.data.callPath.reduce((instance, property) => instance[property], instance);
               port.postMessage({
                 id: event.data.id,
                 result,
