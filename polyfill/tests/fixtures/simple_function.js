@@ -15,6 +15,6 @@ tasklets.export(function nestedBuffer(obj) {
   return buffer.byteLength;
 });
 
-tasklets.export(async function returnsAPromise(someValue) {
+tasklets.export(function returnsAPromise(someValue) {
   return Promise.resolve(someValue + 1);
 });

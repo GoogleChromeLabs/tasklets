@@ -12,35 +12,41 @@
     });
   }
 
-  function isTransferable(thing) {
-    return (thing instanceof ArrayBuffer) ||
-      (thing instanceof ImageBitmap) ||
-      (thing instanceof MessagePort)
-  }
-
-  function createBatchingProxy(cb) {
+  function newBatchingProxy(cb) {
     let callPath = [];
-    const proxy = new Proxy(function() {}, {
+    return new Proxy(function() {}, {
       construct(_, argumentsList, __) {
         const r = cb('CONSTRUCT', callPath, argumentsList);
         callPath = [];
         return r;
       },
-      async apply(_, __, argumentsList) {
+      async apply(_, __, argumentsList, proxy) {
         const r = cb('APPLY', callPath, argumentsList);
         callPath = [];
         return r;
       },
-      get(_, property, __) {
-        if(property === 'then') {
+      get(_, property, proxy) {
+        // `await tasklets.addModule(...)` will try to get the `then` property
+        // of the return value of `addModule(...)` and then invoke it as a
+        // function. This works. Sorry.
+        if(property === 'then' && callPath.length === 0) {
+          return {then: _ => proxy};
+        } else if(property === 'then') {
           const r = cb('GET', callPath);
-          return r.then.bind(r);
+          callPath = [];
+          return Promise.resolve(r).then.bind(r);
+        } else {
+          callPath.push(property);
+          return proxy;
         }
-        callPath.push(property);
-        return proxy;
       },
     });
-    return proxy;
+  }
+
+  function isTransferable(thing) {
+    return (thing instanceof ArrayBuffer) ||
+      (thing instanceof ImageBitmap) ||
+      (thing instanceof MessagePort)
   }
 
   function *iterateAllProperties(obj) {
@@ -56,6 +62,25 @@
       .filter(val => isTransferable(val));
   }
 
+  function resolveFunction(port) {
+    port.start();
+    return async (type, callPath, argumentsList) =>{
+      const response = await pingPongMessage(
+        port,
+        {
+          type,
+          callPath,
+          argumentsList
+        },
+        transferableProperties(argumentsList)
+      );
+      if(type === 'CONSTRUCT') {
+        return newBatchingProxy(resolveFunction(response.data.result.port));
+      }
+      return response.data.result;
+    }
+  }
+
   class Tasklets {
     constructor(worker) {
       this._worker = worker;
@@ -65,57 +90,12 @@
       const response = await pingPongMessage(this._worker, {
         path,
       });
-      if('error' in response.data)
+      if('error' in response.data) {
+        console.error(response.data.stack);
         throw Error(response.data.error);
-
-
-      const port = response.data.port;
-      port.start();
-      // const proxy =
-      const proxyCollection = {};
-      for(const exportName of event.data.structure) {
-        proxyCollection[exportName] = new Proxy(function(){}, {
-          async apply(_, __, argumentsList) {
-            const response = await pingPongMessage(
-              port,
-              {
-                path,
-                exportName,
-                type: 'APPLY',
-                argumentsList,
-              },
-              transferableProperties(argumentsList)
-            );
-            return response.data.result;
-          },
-          construct(_, argumentsList, __) {
-            const {port1, port2} = new MessageChannel();
-            port1.start();
-            pingPongMessage(
-              port,
-              {
-                path,
-                exportName,
-                type: 'CONSTRUCT',
-                argumentsList,
-                port: port2,
-              }, [port2]);
-            return createBatchingProxy(async (type, callPath, argumentsList) => {
-              const response = await pingPongMessage(
-                port1,
-                {
-                  type,
-                  callPath,
-                  argumentsList,
-                },
-                transferableProperties(argumentsList)
-              );
-              return response.data.result;
-            });
-          },
-        });
       }
-      return proxyCollection;
+      const port = response.data.port;
+      return newBatchingProxy(resolveFunction(port));
     }
 
     terminate() {

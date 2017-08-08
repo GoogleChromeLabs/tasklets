@@ -1,28 +1,31 @@
-class TaskletModule {
-  constructor() {
-    this._exports = {};
-    this.onmessage = this.onmessage.bind(this);
-  }
+function *iterateAllProperties(obj) {
+  if(!obj) return;
+  const vals = Object.values(obj);
+  yield* vals;
+  for(const val of vals)
+    yield* iterateAllProperties(val);
+}
 
-  export(obj) {
-    this._exports[obj.name] = obj;
-    // TODO: Exports with same name?!
-  }
+function transferableProperties(obj) {
+  return Array.from(iterateAllProperties(obj))
+    .filter(val => isTransferable(val));
+}
 
-  get port() {
-    return this._port;
-  }
-
-  set port(val) {
-    this._port = val;
-    this._port.onmessage = this.onmessage;
+class ExportedObject {
+  constructor(obj, port) {
+    this.object = obj;
+    this.port = port;
+    this.port.onmessage = this.onmessage.bind(this);
+    this.port.start();
   }
 
   async onmessage(event) {
     switch(event.data.type) {
+      case 'GET':
       case 'APPLY': {
-        const method = this._exports[event.data.exportName];
-        const result = await method.apply(null, event.data.argumentsList);
+        let result = event.data.callPath.reduce((obj, propName) => obj[propName], this.object);
+        if(event.data.type === 'APPLY')
+          result = await result.apply(null, event.data.argumentsList);
         this.port.postMessage({
           id: event.data.id,
           result,
@@ -30,65 +33,44 @@ class TaskletModule {
         break;
       }
       case 'CONSTRUCT': {
-        const constructor = this._exports[event.data.exportName];
+        const constructor = event.data.callPath.reduce((obj, propName) => obj[propName], this.object);
         const instance = new constructor(...event.data.argumentsList);
-        const port = event.data.port;
-        event.data.port.addEventListener('message', async event => {
-          switch(event.data.type) {
-            case 'APPLY': {
-              const result = await event.data.callPath.reduce((instance, property, idx) => {
-                if(idx === event.data.callPath.length - 1)
-                  return instance[property].apply(instance, event.data.argumentsList);
-                return instance[property];
-              }, instance);
-              port.postMessage({
-                id: event.data.id,
-                result,
-              });
-              break;
-            }
-            case 'GET': {
-              const result = await event.data.callPath.reduce((instance, property) => instance[property], instance);
-              port.postMessage({
-                id: event.data.id,
-                result,
-              });
-              break;
-            }
-            default:
-              throw Error(`Unknown message type "${event.data.type}"`);
-          }
-        });
-        port.start();
+        const {port1, port2} = new MessageChannel();
+        new ExportedObject(instance, port1);
+        this.port.postMessage({
+          id: event.data.id,
+          result: {
+            port: port2,
+          },
+        }, [port2]);
         break;
       }
     }
-  }
-
-  get structure() {
-    return Object.keys(this._exports);
   }
 }
 
 addEventListener('message', event => {
   try {
-    const module = new TaskletModule();
-
-    self.tasklets = module;
+    const obj = {};
+    self.tasklets = {
+      export(thing) {
+        obj[thing.name] = thing;
+      }
+    };
     importScripts(event.data.path);
+    const {port1, port2} = new MessageChannel();
+    const module = new ExportedObject(obj, port1);
     delete self.tasklets;
 
-    const {port1, port2} = new MessageChannel();
-    module.port = port1;
     postMessage({
       id: event.data.id,
       port: port2,
-      structure: module.structure,
     }, [port2]);
   } catch(error) {
     postMessage({
       id: event.data.id,
       error: error.toString(),
+      stack: error.stack,
     });
   }
 });
