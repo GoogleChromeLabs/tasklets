@@ -15,29 +15,21 @@
   function isTransferable(thing) {
     return (thing instanceof ArrayBuffer) ||
       (thing instanceof ImageBitmap) ||
-      (thing instanceof MessagePort);
+      (thing instanceof MessagePort)
   }
 
-  function makeItAProxyAllTheWayDown(port) {
+  function createBatchingProxy(cb) {
     let callPath = [];
     const proxy = new Proxy(function() {}, {
       async apply(_, __, argumentsList) {
-        const response = await pingPongMessage(port, {
-          type: 'APPLY',
-          callPath,
-          argumentsList,
-        });
+        const r = cb('APPLY', callPath, argumentsList);
         callPath = [];
-        return response.data.result;
+        return r;
       },
       get(_, property, __) {
         if(property === 'then') {
-          const p = pingPongMessage(port, {
-            type: 'GET',
-            callPath,
-          }).then(response => response.data.result);
-          callPath = [];
-          return p.then.bind(p);
+          const r = cb('GET', callPath);
+          return r.then.bind(r);
         }
         callPath.push(property);
         return proxy;
@@ -52,6 +44,11 @@
     yield* vals;
     for(const val of vals)
       yield* iterateAllProperties(val);
+  }
+
+  function transferableProperties(obj) {
+    return Array.from(iterateAllProperties(obj))
+      .filter(val => isTransferable(val));
   }
 
   class Tasklets {
@@ -74,7 +71,6 @@
       for(const exportName of event.data.structure) {
         proxyCollection[exportName] = new Proxy(function(){}, {
           async apply(_, __, argumentsList) {
-            const transferableArguments = Array.from(iterateAllProperties(argumentsList)).filter(val => isTransferable(val));
             const response = await pingPongMessage(
               port,
               {
@@ -82,12 +78,27 @@
                 exportName,
                 type: 'APPLY',
                 argumentsList,
-              }, transferableArguments);
+              },
+              transferableProperties(argumentsList)
+            );
             return response.data.result;
           },
           construct(_, argumentsList, __) {
             const {port1, port2} = new MessageChannel();
             port1.start();
+            const proxy = createBatchingProxy(async (type, callPath, argumentsList) => {
+              const response = await pingPongMessage(
+                port1,
+                {
+                  type,
+                  callPath,
+                  argumentsList,
+                },
+                transferableProperties(argumentsList)
+              );
+              return response.data.result;
+            });
+
             pingPongMessage(
               port,
               {
@@ -97,7 +108,7 @@
                 argumentsList,
                 port: port2,
               }, [port2]);
-            return makeItAProxyAllTheWayDown(port1);
+            return proxy;
           },
         });
       }
