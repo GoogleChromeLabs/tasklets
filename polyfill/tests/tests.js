@@ -63,4 +63,10 @@ describe('Tasklet Polyfill', function() {
     const instance = new tasklet.SimpleClass();
     expect(await instance._answer).to.equal(42);
   });
+
+  it('can access getters of instantiated classes', async function() {
+    const tasklet = await tasklets.addModule('/base/tests/fixtures/simple_class.js');
+    const instance = new tasklet.SimpleClass();
+    expect(await instance.answerGetter).to.equal(43);
+  });
 });

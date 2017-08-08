@@ -6,4 +6,8 @@ tasklets.export(class SimpleClass {
   getAnswer() {
     return this._answer;
   }
+
+  get answerGetter() {
+    return this._answer + 1;
+  }
 });
