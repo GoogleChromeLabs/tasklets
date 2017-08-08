@@ -37,6 +37,14 @@ describe('Tasklet Polyfill', function() {
     expect(typedArr.length).to.equal(0);
   });
 
+  it('can transfer a nested buffer', async function() {
+    const tasklet = await tasklets.addModule('/base/tests/fixtures/simple_function.js');
+    expect(Object.keys(tasklet)).to.contain('nestedBuffer');
+    const typedArr = new Uint8Array([1, 2, 3]);
+    expect(await tasklet.nestedBuffer({a: {b: {c: {buffer: typedArr.buffer}}}})).to.equal(3);
+    expect(typedArr.length).to.equal(0);
+  });
+
   it('can transfer a message port', async function() {
     const tasklet = await tasklets.addModule('/base/tests/fixtures/simple_function.js');
     expect(Object.keys(tasklet)).to.contain('takesAMessagePort');

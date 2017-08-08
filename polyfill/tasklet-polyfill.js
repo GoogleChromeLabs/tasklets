@@ -37,6 +37,14 @@
     return proxy;
   }
 
+  function *iterateAllProperties(obj) {
+    if(!obj) return;
+    const vals = Object.values(obj);
+    yield* vals;
+    for(const val of vals)
+      yield* iterateAllProperties(val);
+  }
+
   class Tasklets {
     constructor(worker) {
       this._worker = worker;
@@ -58,7 +66,7 @@
         proxyCollection[exportName] = new Proxy(function(){}, {
           async apply(_, __, argumentsList) {
             // TODO: Actually walk the entire tree
-            const transferableArguments = argumentsList.filter(val => isTransferable(val));
+            const transferableArguments = Array.from(iterateAllProperties(argumentsList)).filter(val => isTransferable(val));
             const response = await pingPongMessage(
               port,
               {
