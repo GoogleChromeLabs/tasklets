@@ -21,6 +21,11 @@
   function createBatchingProxy(cb) {
     let callPath = [];
     const proxy = new Proxy(function() {}, {
+      construct(_, argumentsList, __) {
+        const r = cb('CONSTRUCT', callPath, argumentsList);
+        callPath = [];
+        return r;
+      },
       async apply(_, __, argumentsList) {
         const r = cb('APPLY', callPath, argumentsList);
         callPath = [];
@@ -64,9 +69,9 @@
         throw Error(response.data.error);
 
 
-      const that = this;
       const port = response.data.port;
       port.start();
+      // const proxy =
       const proxyCollection = {};
       for(const exportName of event.data.structure) {
         proxyCollection[exportName] = new Proxy(function(){}, {
@@ -86,7 +91,16 @@
           construct(_, argumentsList, __) {
             const {port1, port2} = new MessageChannel();
             port1.start();
-            const proxy = createBatchingProxy(async (type, callPath, argumentsList) => {
+            pingPongMessage(
+              port,
+              {
+                path,
+                exportName,
+                type: 'CONSTRUCT',
+                argumentsList,
+                port: port2,
+              }, [port2]);
+            return createBatchingProxy(async (type, callPath, argumentsList) => {
               const response = await pingPongMessage(
                 port1,
                 {
@@ -98,17 +112,6 @@
               );
               return response.data.result;
             });
-
-            pingPongMessage(
-              port,
-              {
-                path,
-                exportName,
-                type: 'CONSTRUCT',
-                argumentsList,
-                port: port2,
-              }, [port2]);
-            return proxy;
           },
         });
       }
