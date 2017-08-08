@@ -29,6 +29,14 @@ describe('Tasklet Polyfill', function() {
     expect(await instance.getAnswer()).to.equal(42);
   });
 
+  it('can invoke methods on an instance multiple times even', async function() {
+    const tasklet = await tasklets.addModule('/base/tests/fixtures/simple_class.js');
+    const instance = new tasklet.SimpleClass();
+    expect(await instance.getAnswer()).to.equal(42);
+    expect(await instance.getAnswer()).to.equal(42);
+    expect(await instance.getAnswer()).to.equal(42);
+  });
+
   it('can transfer a buffer', async function() {
     const tasklet = await tasklets.addModule('/base/tests/fixtures/simple_function.js');
     expect(Object.keys(tasklet)).to.contain('takesABuffer');

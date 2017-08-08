@@ -27,6 +27,7 @@
           callPath,
           argumentsList,
         });
+        callPath = [];
         return response.data.result;
       },
       get(_, property, __) {
@@ -35,6 +36,7 @@
             type: 'GET',
             callPath,
           }).then(response => response.data.result);
+          callPath = [];
           return p.then.bind(p);
         }
         callPath.push(property);
