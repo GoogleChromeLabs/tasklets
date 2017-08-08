@@ -23,9 +23,11 @@ class ExportedObject {
     switch(event.data.type) {
       case 'GET':
       case 'APPLY': {
-        let result = event.data.callPath.reduce((obj, propName) => obj[propName], this.object);
-        if(event.data.type === 'APPLY')
+        let result = await event.data.callPath.reduce((obj, propName) => obj[propName], this.object);
+        if(event.data.type === 'APPLY') {
+          event.data.callPath.pop();
           result = await result.apply(null, event.data.argumentsList);
+        }
         this.port.postMessage({
           id: event.data.id,
           result,

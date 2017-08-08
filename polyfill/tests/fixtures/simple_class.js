@@ -1,5 +1,7 @@
 tasklets.export(class SimpleClass {
   constructor() {
+    this._answer = 42;
+    this.isAPromise = Promise.resolve(4);
   }
 
   getAnswer() {
