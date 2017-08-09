@@ -8,7 +8,7 @@ const configuration = {
         included: false,
       },
       {
-        pattern: 'tasklet-worker-env.js',
+        pattern: 'tasklet-worker-scope.js',
         included: false,
       },
       {

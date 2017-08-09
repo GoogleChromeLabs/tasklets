@@ -106,7 +106,7 @@
   const scriptURL = new URL(document.currentScript.src);
   const parts = scriptURL.pathname.split('/');
   parts.pop();
-  scriptURL.pathname = `${parts.join('/')}/tasklet-worker-env.js`;
+  scriptURL.pathname = `${parts.join('/')}/tasklet-worker-scope.js`;
   scriptURL.search = '';
   const worker = new Worker(scriptURL.toString());
   self.tasklets = new Tasklets(worker);
