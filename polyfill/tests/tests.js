@@ -81,24 +81,34 @@ describe('Tasklet Polyfill', function() {
 
   it('can return promises from functions', async function() {
     const tasklet = await tasklets.addModule('/base/tests/fixtures/simple_function.js');
-    expect(await tasklet.returnsAPromise(4)).to.equal(5);
+    expect(await tasklet.returnsAPromise(42)).to.equal(43);
   });
 
   it('can return promises from instance methods', async function() {
     const tasklet = await tasklets.addModule('/base/tests/fixtures/simple_class.js');
     const instance = await new tasklet.SimpleClass();
-    expect(await instance.returnsAPromise(4)).to.equal(5);
+    expect(await instance.returnsAPromise(42)).to.equal(43);
   });
 
   it('can return promises from instance properties ', async function() {
     const tasklet = await tasklets.addModule('/base/tests/fixtures/simple_class.js');
     const instance = await new tasklet.SimpleClass();
-    expect(await instance.isAPromise).to.equal(4);
+    expect(await instance.isAPromise).to.equal(42);
   });
 
   it('can return promises from instance getters ', async function() {
     const tasklet = await tasklets.addModule('/base/tests/fixtures/simple_class.js');
     const instance = await new tasklet.SimpleClass();
-    expect(await instance.isAPromiseGetter).to.equal(4);
+    expect(await instance.isAPromiseGetter).to.equal(42);
   });
-});
+
+  it('can access static getters from classes', async function() {
+    const tasklet = await tasklets.addModule('/base/tests/fixtures/simple_class.js');
+    expect(await tasklet.SimpleClass.VERSION).to.equal(42);
+  });
+
+  it('can access static functions from classes', async function() {
+    const tasklet = await tasklets.addModule('/base/tests/fixtures/simple_class.js');
+    expect(await tasklet.SimpleClass.GetVersion()).to.equal(42);
+  });
+});;
