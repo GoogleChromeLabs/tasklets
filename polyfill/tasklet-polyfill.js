@@ -45,7 +45,6 @@
 
   function isTransferable(thing) {
     return (thing instanceof ArrayBuffer) ||
-      (thing instanceof ImageBitmap) ||
       (thing instanceof MessagePort)
   }
 

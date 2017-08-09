@@ -25,8 +25,20 @@ const configuration = {
     colors: true,
     logLevel: config.LOG_INFO,
     autoWatch: true,
+    singleRun: true,
     concurrency: Infinity,
+    browsers: ['Chrome', 'Firefox', 'Safari'],
+    customLaunchers: {
+      DockerChrome: {
+          base: 'Chrome',
+          flags: ['--no-sandbox', '--headless'],
+      },
+    },
   };
+
+  if (process.env.INSIDE_DOCKER) {
+    configuration.browsers = ['DockerChrome'];
+  }
 
   config.set(configuration);
 };
