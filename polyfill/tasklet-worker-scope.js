@@ -57,8 +57,9 @@ self.tasklets = {};
   addEventListener('message', event => {
     try {
       const obj = {};
-      self.tasklets.export = thing => {
-        obj[thing.name] = thing;
+      self.tasklets.export = (thing, name = '') => {
+        if(!name) name = thing.name;
+        obj[name] = thing;
       };
       importScripts(event.data.path);
       const {port1, port2} = new MessageChannel();

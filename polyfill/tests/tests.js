@@ -111,4 +111,20 @@ describe('Tasklet Polyfill', function() {
     const tasklet = await tasklets.addModule('/base/tests/fixtures/simple_class.js');
     expect(await tasklet.SimpleClass.GetVersion()).to.equal(42);
   });
-});;
+
+  it('can export objects', async function() {
+    const tasklet = await tasklets.addModule('/base/tests/fixtures/simple_object.js');
+    expect(await tasklet.numberObject.myNumber).to.equal(42);
+  });
+
+  it('can invoke methods on objects', async function() {
+    const tasklet = await tasklets.addModule('/base/tests/fixtures/simple_object.js');
+    expect(await tasklet.functionObject.myFunction()).to.equal(42);
+  });
+
+  it('can instantiate classes on objects', async function() {
+    const tasklet = await tasklets.addModule('/base/tests/fixtures/simple_object.js');
+    const instance = await new tasklet.classObject.MyClass();
+    expect(await instance.getNumber()).to.equal(42);
+  });
+});
