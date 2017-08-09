@@ -1,7 +1,7 @@
 module.exports = function(config) {
 const configuration = {
     basePath: '',
-    frameworks: ['mocha'],
+    frameworks: ['mocha', 'chai'],
     files: [
       {
         pattern: 'tasklet-polyfill.js',
@@ -15,7 +15,6 @@ const configuration = {
         pattern: 'tests/fixtures/*',
         included: false,
       },
-      'node_modules/chai/chai.js',
       'tests/tests.js',
     ],
     preprocessors: {
@@ -30,9 +29,9 @@ const configuration = {
     browsers: ['Chrome', 'Firefox', 'Safari'],
     customLaunchers: {
       DockerChrome: {
-          base: 'Chrome',
-          flags: ['--no-sandbox', '--headless'],
-      },
+          base: 'ChromeHeadless',
+          flags: ['--no-sandbox'],
+      } ,
     },
   };
 
