@@ -61,6 +61,15 @@
       .filter(val => isTransferable(val));
   }
 
+  function hydrateTransferProxies(obj) {
+    // TODO This needs to be a tree-walk, when the worker performs a tree walk.
+    const transferProxyPort = obj && obj['__transfer_proxy_port'];
+    if (transferProxyPort)
+      return newBatchingProxy(resolveFunction(transferProxyPort));
+
+    return obj;
+  }
+
   function resolveFunction(port) {
     port.start();
     return async (type, callPath, argumentsList) =>{
@@ -73,10 +82,12 @@
         },
         transferableProperties(argumentsList)
       );
+      // TODO could make CONSTRUCT not a special case, by returning it in the
+      // __transfer_proxy_port form.
       if(type === 'CONSTRUCT') {
         return newBatchingProxy(resolveFunction(response.data.result.port));
       }
-      return response.data.result;
+      return hydrateTransferProxies(response.data.result);
     }
   }
 

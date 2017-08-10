@@ -133,4 +133,17 @@ describe('Tasklet Polyfill', function() {
     const instance = await new tasklet.classObject.MyClass();
     expect(await instance.getNumber()).to.equal(42);
   });
+
+  it('can return a proxy object back from a method, and invoke on that proxy', async function() {
+    const tasklet = await tasklets.addModule('/base/tests/fixtures/transfer_proxies.js');
+    const instance = await new tasklet.GetterClass();
+    const proxy = await instance.getTransferProxy();
+    expect(await proxy.method()).to.equal(42);
+  });
+
+  it('can return a proxy object back from a function, and invoke on that proxy', async function() {
+    const tasklet = await tasklets.addModule('/base/tests/fixtures/transfer_proxies.js');
+    const instance = await new tasklet.returnATransferProxy();
+    expect(await instance.member).to.equal(42);
+  });
 });

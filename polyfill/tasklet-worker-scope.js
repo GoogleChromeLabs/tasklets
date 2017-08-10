@@ -2,6 +2,45 @@ self.tasklets = {};
 
 (function() {
 
+  const transferProxySymbol = Symbol('transferProxy');
+
+  function transferProxy(obj) {
+    obj[transferProxySymbol] = true;
+    return obj;
+  }
+
+  function isTransferProxy(obj) {
+    return obj && obj[transferProxySymbol];
+  }
+
+  function convertToTransferProxy(obj) {
+    const {port1, port2} = new MessageChannel();
+    new ExportedObject(obj, port1);
+    return {
+      result: {'__transfer_proxy_port': port2},
+      transferables: [port2]
+    };
+  }
+
+  function prepareResult(result) {
+    // TODO prepareResult actually needs to perform a structured clone tree
+    // walk of the data as we want to allow:
+    // return {foo: transferProxy(foo)};
+    // We also don't want to directly mutate the data as:
+    // class A {
+    //   constructor() { this.b = {b: transferProxy(new B())} }
+    //   method1() { return this.b; }
+    //   method2() { this.b.foo; /* should work */ }
+    // }
+    if (isTransferProxy(result))
+      return convertToTransferProxy(result);
+
+    return {
+      result,
+      transferables: transferableProperties(result),
+    };
+  }
+
   function isTransferable(thing) {
     return (thing instanceof ArrayBuffer) ||
       (thing instanceof MessagePort)
@@ -32,15 +71,16 @@ self.tasklets = {};
       switch(event.data.type) {
         case 'GET':
         case 'APPLY': {
-          let result = await event.data.callPath.reduce((obj, propName) => obj[propName], this.object);
+          let obj = await event.data.callPath.reduce((obj, propName) => obj[propName], this.object);
           if(event.data.type === 'APPLY') {
             event.data.callPath.pop();
-            result = await result.apply(null, event.data.argumentsList);
+            obj = await obj.apply(null, event.data.argumentsList);
           }
+          const {result, transferables} = prepareResult(obj);
           this.port.postMessage({
             id: event.data.id,
             result,
-          }, transferableProperties(result));
+          }, transferables);
           break;
         }
         case 'CONSTRUCT': {
@@ -69,7 +109,7 @@ self.tasklets = {};
       };
       importScripts(event.data.path);
       const {port1, port2} = new MessageChannel();
-      const module = new ExportedObject(obj, port1);
+      new ExportedObject(obj, port1);
       delete self.tasklets.export;
 
       postMessage({
@@ -84,4 +124,6 @@ self.tasklets = {};
       });
     }
   });
+
+  self.transferProxy = transferProxy;
 })();
