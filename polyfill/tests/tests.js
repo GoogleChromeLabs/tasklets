@@ -67,6 +67,12 @@ describe('Tasklet Polyfill', function() {
     });
   });
 
+  it('can transfer a message port from the tasklet', async function() {
+    const tasklet = await tasklets.addModule('/base/tests/fixtures/simple_function.js');
+    const {port} = await tasklet.returnsAMessagePort();
+    expect(port).to.exist;
+  });
+
   it('can access properties of instantiated classes', async function() {
     const tasklet = await tasklets.addModule('/base/tests/fixtures/simple_class.js');
     const instance = await new tasklet.SimpleClass();

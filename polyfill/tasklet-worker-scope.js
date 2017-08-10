@@ -1,6 +1,12 @@
 self.tasklets = {};
 
 (function() {
+
+  function isTransferable(thing) {
+    return (thing instanceof ArrayBuffer) ||
+      (thing instanceof MessagePort)
+  }
+
   function *iterateAllProperties(obj) {
     if(!obj) return;
     const vals = Object.values(obj);
@@ -34,7 +40,7 @@ self.tasklets = {};
           this.port.postMessage({
             id: event.data.id,
             result,
-          });
+          }, transferableProperties(result));
           break;
         }
         case 'CONSTRUCT': {

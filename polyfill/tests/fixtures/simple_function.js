@@ -18,3 +18,9 @@ tasklets.export(function nestedBuffer(obj) {
 tasklets.export(function returnsAPromise(someValue) {
   return Promise.resolve(someValue + 1);
 });
+
+tasklets.export(function returnsAMessagePort() {
+  return {
+    port: (new MessageChannel()).port1
+  };
+});
