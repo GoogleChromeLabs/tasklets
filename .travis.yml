@@ -1,0 +1,9 @@
+sudo: required
+
+services:
+  - docker
+
+before_script: cd polyfill
+script:
+  - docker build -t tasklets .
+  - docker run --rm -v `pwd`:/usr/src tasklets
