@@ -146,4 +146,9 @@ describe('Tasklet Polyfill', function() {
     const instance = await new tasklet.returnATransferProxy();
     expect(await instance.member).to.equal(42);
   });
+
+  it('works with worker-side fetches', async function() {
+    const tasklet = await tasklets.addModule('/base/tests/fixtures/simple_function.js');
+    expect(await tasklet.doesAFetch()).to.have.string('Ohai');
+  });
 });

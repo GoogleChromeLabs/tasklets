@@ -24,3 +24,8 @@ tasklets.export(function returnsAMessagePort() {
     port: (new MessageChannel()).port1
   };
 });
+
+tasklets.export(async function doesAFetch(someValue) {
+  const response = await fetch('/base/tests/fixtures/file.txt');
+  return await response.text();
+});

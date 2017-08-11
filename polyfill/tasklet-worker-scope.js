@@ -47,6 +47,7 @@ self.tasklets = {};
   }
 
   function *iterateAllProperties(obj) {
+    if(typeof obj === 'string') return obj;
     if(!obj) return;
     const vals = Object.values(obj);
     yield* vals;

@@ -4,6 +4,10 @@ const configuration = {
     frameworks: ['mocha', 'chai'],
     files: [
       {
+        pattern: '*.txt',
+        included: false,
+      },
+      {
         pattern: 'tasklet-polyfill.js',
         included: false,
       },
