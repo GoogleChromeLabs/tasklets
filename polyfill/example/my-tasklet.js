@@ -3,8 +3,8 @@ tasklets.export(class GreatClass {
     this._state = 42;
   }
 
-  tremendousMethod() {
-    return 'This is a magnificient string';
+  uselessMethod(number) {
+    return `This is a string containing the number ${number + this._state}`;
   }
 });
 
