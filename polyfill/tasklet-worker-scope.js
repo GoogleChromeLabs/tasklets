@@ -69,13 +69,15 @@ self.tasklets = {};
     }
 
     async onmessage(event) {
+      const callPath = event.data.callPath;
       switch(event.data.type) {
         case 'GET':
         case 'APPLY': {
-          let obj = await event.data.callPath.reduce((obj, propName) => obj[propName], this.object);
+          let obj = await callPath.reduce((obj, propName) => obj[propName], this.object);
           if(event.data.type === 'APPLY') {
-            event.data.callPath.pop();
-            obj = await obj.apply(null, event.data.argumentsList);
+            callPath.pop();
+            const that = await callPath.reduce((obj, propName) => obj[propName], this.object);
+            obj = await obj.apply(that, event.data.argumentsList);
           }
           const {result, transferables} = prepareResult(obj);
           this.port.postMessage({
@@ -85,7 +87,7 @@ self.tasklets = {};
           break;
         }
         case 'CONSTRUCT': {
-          const constructor = event.data.callPath.reduce((obj, propName) => obj[propName], this.object);
+          const constructor = callPath.reduce((obj, propName) => obj[propName], this.object);
           const instance = new constructor(...event.data.argumentsList);
           const {port1, port2} = new MessageChannel();
           new ExportedObject(instance, port1);

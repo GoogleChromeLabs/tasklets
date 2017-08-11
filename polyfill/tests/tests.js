@@ -108,6 +108,12 @@ describe('Tasklet Polyfill', function() {
     expect(await instance.isAPromiseGetter).to.equal(42);
   });
 
+  it('allows methods to access instance members', async function() {
+    const tasklet = await tasklets.addModule('/base/tests/fixtures/simple_class.js');
+    const instance = await new tasklet.SimpleClass();
+    expect(await instance.returnsAPropertyValue()).to.equal(42);
+  });
+
   it('can access static getters from classes', async function() {
     const tasklet = await tasklets.addModule('/base/tests/fixtures/simple_class.js');
     expect(await tasklet.SimpleClass.VERSION).to.equal(42);

@@ -27,4 +27,8 @@ tasklets.export(class SimpleClass {
   get isAPromiseGetter() {
     return Promise.resolve(42);
   }
+
+  returnsAPropertyValue() {
+    return this._answer;
+  }
 });
