@@ -153,6 +153,13 @@ describe('Tasklet Polyfill', function() {
     expect(await instance.member).to.equal(42);
   });
 
+  it('can return a proxy for an object', async function() {
+    const tasklet = await tasklets.addModule('/base/tests/fixtures/transfer_proxies.js');
+    const obj = await new tasklet.returnsATransferProxyForAnObject();
+    expect(await obj.prop).to.equal(4);
+    expect(await obj.func()).to.equal(5);
+  });
+
   it('works with worker-side fetches', async function() {
     const tasklet = await tasklets.addModule('/base/tests/fixtures/simple_function.js');
     expect(await tasklet.doesAFetch()).to.have.string('Ohai');

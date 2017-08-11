@@ -10,3 +10,10 @@ tasklets.export(function returnATransferProxy() {
 tasklets.export(class GetterClass {
   getTransferProxy() { return transferProxy(new ReturnedClass()); }
 });
+
+tasklets.export(function returnsATransferProxyForAnObject() {
+  return transferProxy({
+    prop: 4,
+    func: _ => 5,
+  });
+})
