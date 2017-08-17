@@ -27,7 +27,7 @@ tasklets = {};
 
   function convertToTransferProxy(obj) {
     const {port1, port2} = new MessageChannel();
-    new ExportedObject(obj, port1);
+    exportObject(obj, port1);
     return {
       result: {'__transfer_proxy_port': port2},
       transferables: [port2]
@@ -72,38 +72,31 @@ tasklets = {};
       .filter(val => isTransferable(val));
   }
 
-  class ExportedObject {
-    constructor(obj, port) {
-      this.object = obj;
-      this.port = port;
-      this.port.onmessage = this.onmessage.bind(this);
-      this.port.start();
-    }
-
-    async onmessage(event) {
+  function exportObject(rootObj, port) {
+    port.onmessage = async event => {
       const callPath = event.data.callPath;
       switch(event.data.type) {
         case 'GET':
         case 'APPLY': {
-          let obj = await callPath.reduce((obj, propName) => obj[propName], this.object);
+          let obj = await callPath.reduce((obj, propName) => obj[propName], rootObj);
           if(event.data.type === 'APPLY') {
             callPath.pop();
-            const that = await callPath.reduce((obj, propName) => obj[propName], this.object);
+            const that = await callPath.reduce((obj, propName) => obj[propName], rootObj);
             obj = await obj.apply(that, event.data.argumentsList);
           }
           const {result, transferables} = prepareResult(obj);
-          this.port.postMessage({
+          port.postMessage({
             id: event.data.id,
             result,
           }, transferables);
           break;
         }
         case 'CONSTRUCT': {
-          const constructor = callPath.reduce((obj, propName) => obj[propName], this.object);
+          const constructor = callPath.reduce((obj, propName) => obj[propName], rootObj);
           const instance = new constructor(...event.data.argumentsList);
           const {port1, port2} = new MessageChannel();
-          new ExportedObject(instance, port1);
-          this.port.postMessage({
+          exportObject(instance, port1);
+          port.postMessage({
             id: event.data.id,
             result: {
               port: port2,
@@ -124,7 +117,7 @@ tasklets = {};
       };
       importScripts(event.data.path);
       const {port1, port2} = new MessageChannel();
-      new ExportedObject(obj, port1);
+      exportObject(obj, port1);
       delete self.tasklets.export;
 
       postMessage({
