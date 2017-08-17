@@ -11,8 +11,9 @@
  * limitations under the License.
  */
 (function() {
+  let pingPongCounter = 0;
   function pingPongMessage(target, msg, transferables) {
-    const id = performance.now();
+    const id = pingPongCounter++;
 
     return new Promise(resolve => {
       target.addEventListener('message', function handler(event) {
