@@ -4,7 +4,8 @@
   "description": "",
   "scripts": {
     "test": "karma start",
-    "watchtest": "karma start --no-single-run --browsers Chrome"
+    "watchtest": "karma start --no-single-run --browsers Chrome",
+    "build": "babili -o tasklet-worker-scope.min.js tasklet-worker-scope.js && babili tasklet-polyfill.js | sed  's/tasklet-worker-scope.js/tasklet-worker-scope.min.js/' > tasklet-polyfill.min.js"
   },
   "keywords": [],
   "author": {
@@ -31,5 +32,8 @@
     "karma-chrome-launcher": "^2.2.0",
     "karma-firefox-launcher": "^1.0.1",
     "karma-safari-launcher": "^1.0.0"
+  },
+  "dependencies": {
+    "babili": "^0.1.4"
   }
 }
