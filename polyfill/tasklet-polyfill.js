@@ -125,6 +125,7 @@
 
     terminate() {
       this._worker.terminate();
+      delete self.tasklets;
     }
   }
 
