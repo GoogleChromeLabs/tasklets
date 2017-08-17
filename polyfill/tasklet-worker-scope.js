@@ -10,16 +10,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-self.tasklets = {};
+tasklets = {};
 
 (function() {
 
   const transferProxySymbol = Symbol('transferProxy');
 
-  function transferProxy(obj) {
+  tasklets.transferProxy = (obj) => {
     obj[transferProxySymbol] = true;
     return obj;
-  }
+  };
 
   function isTransferProxy(obj) {
     return obj && obj[transferProxySymbol];
@@ -140,5 +140,4 @@ self.tasklets = {};
     }
   });
 
-  self.transferProxy = transferProxy;
 })();

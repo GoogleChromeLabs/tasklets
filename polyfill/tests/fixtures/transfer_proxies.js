@@ -4,15 +4,15 @@ class ReturnedClass {
 }
 
 tasklets.export(function returnATransferProxy() {
-  return transferProxy(new ReturnedClass());
+  return tasklets.transferProxy(new ReturnedClass());
 });
 
 tasklets.export(class GetterClass {
-  getTransferProxy() { return transferProxy(new ReturnedClass()); }
+  getTransferProxy() { return tasklets.transferProxy(new ReturnedClass()); }
 });
 
 tasklets.export(function returnsATransferProxyForAnObject() {
-  return transferProxy({
+  return tasklets.transferProxy({
     prop: 4,
     func: _ => 5,
   });
