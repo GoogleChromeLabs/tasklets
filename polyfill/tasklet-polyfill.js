@@ -126,11 +126,7 @@
     }
   }
 
-  const scriptURL = new URL(document.currentScript.src);
-  const parts = scriptURL.pathname.split('/');
-  parts.pop();
-  scriptURL.pathname = `${parts.join('/')}/tasklet-worker-scope.js`;
-  scriptURL.search = '';
+  const scriptURL = new URL("tasklet-worker-scope.js", document.currentScript.src);
   const worker = new Worker(scriptURL.toString());
   self.tasklets = new Tasklets(worker);
 })();
