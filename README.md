@@ -86,7 +86,7 @@ export function add(a, b) {
 ```js
 const module = await tasklet.addModule('speaker.js');
 
-const speaker = new module.Speaker();
+const speaker = await new module.Speaker();
 console.log(await speaker.sayHello('world!')); // Logs "Hello world!".
 
 console.log(await module.add(2, 3)); // Logs '5'.
@@ -187,7 +187,7 @@ export class FetchManager extends EventTarget {
 
 ```js
 const api = await tasklet.addModule('api.js');
-const fetchManager = new api.FetchManager();
+const fetchManager = await new api.FetchManager();
 fetchManager.addEventListener('image-fetched', () => {
   // maybe update some UI?
 });
@@ -228,7 +228,7 @@ export class CalendarEntry {
 ```js
 // main.js
 const {Calendar} = await tasklet.addModule('calendarTasklet.js');
-const myCalendar = new Calendar(myCredentials);
+const myCalendar = await new Calendar(myCredentials);
 const events = await myCalendar.nextEvents();
 events.map(event => myCalender.generateShareLink(event.id)); // !!!
 ```
@@ -258,26 +258,3 @@ What gets exported?
   3. Don't do magic – rely on explicit listing of things to expose (á la
      `static get exportedProperties() { return [/*...*/]; }`)
   4. WebIDL
-
-#### Failure Modes
-
-In all of the above code samples, we've had a "synchronous" constructor call. We've just done this
-because we think it's easier to use, but this brings up the question:
-
-```js
-// api.js
-export class A {
-  constructor() { throw new Error('nope'); }
-  func() { return 42; }
-}
-```
-
-```js
-const api = await tasklet.addModule('api.js');
-const a = new api.A(); // Succeeds.
-
-a.func(); // Fails, as we couldn't create the underlying class.
-```
-
-We think this is OK. It also handles cases above where if a class is killed and couldn't be
-recreated the behavior is sane.
