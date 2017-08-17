@@ -11,6 +11,8 @@
  * limitations under the License.
  */
 (function() {
+  if(self.tasklets)
+    return;
   let pingPongCounter = 0;
   function pingPongMessage(target, msg, transferables) {
     const id = pingPongCounter++;
