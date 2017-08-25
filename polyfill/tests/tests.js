@@ -33,6 +33,13 @@ describe('Tasklet Polyfill', function() {
     expect(await instance.getAnswer()).to.equal(42);
   });
 
+  it('can bind methods from an exported class', async function() {
+    const tasklet = await tasklets.addModule('/base/tests/fixtures/simple_class.js');
+    const instance = await new tasklet.SimpleClass();
+    const method = instance.getAnswer.bind(instance);
+    expect(await method()).to.equal(42);
+  });
+
   it('can invoke methods on an instance multiple times even', async function() {
     const tasklet = await tasklets.addModule('/base/tests/fixtures/simple_class.js');
     const instance = await new tasklet.SimpleClass();
