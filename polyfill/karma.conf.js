@@ -35,13 +35,12 @@ const configuration = {
       DockerChrome: {
           base: 'ChromeHeadless',
           flags: ['--no-sandbox'],
-      } ,
+      },
     },
   };
 
-  if (process.env.INSIDE_DOCKER) {
+  if (process.env.INSIDE_DOCKER)
     configuration.browsers = ['DockerChrome'];
-  }
 
   config.set(configuration);
 };

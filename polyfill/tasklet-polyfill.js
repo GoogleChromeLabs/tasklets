@@ -11,7 +11,7 @@
  * limitations under the License.
  */
 (function() {
-  if(self.tasklets)
+  if (self.tasklets)
     return;
   let pingPongCounter = 0;
   function pingPongMessage(target, msg, transferables) {
@@ -19,7 +19,8 @@
 
     return new Promise(resolve => {
       target.addEventListener('message', function handler(event) {
-        if(event.data.id !== id) return;
+        if (event.data.id !== id)
+          return;
         target.removeEventListener('message', handler);
         resolve(event);
       });
@@ -44,9 +45,9 @@
         // `await tasklets.addModule(...)` will try to get the `then` property
         // of the return value of `addModule(...)` and then invoke it as a
         // function. This works. Sorry.
-        if(property === 'then' && callPath.length === 0) {
+        if (property === 'then' && callPath.length === 0) {
           return {then: _ => proxy};
-        } else if(property === 'then') {
+        } else if (property === 'then') {
           const r = cb('GET', callPath);
           callPath = [];
           return Promise.resolve(r).then.bind(r);
@@ -58,16 +59,17 @@
     });
   }
 
+  const TRANSFERABLE_TYPES = [ArrayBuffer, MessagePort];
   function isTransferable(thing) {
-    return (thing instanceof ArrayBuffer) ||
-      (thing instanceof MessagePort)
+    return TRANSFERABLE_TYPES.some(type => thing instanceof type);
   }
 
-  function *iterateAllProperties(obj) {
-    if(!obj) return;
+  function* iterateAllProperties(obj) {
+    if (!obj)
+      return;
     const vals = Object.values(obj);
     yield* vals;
-    for(const val of vals)
+    for (const val of vals)
       yield* iterateAllProperties(val);
   }
 
@@ -87,23 +89,22 @@
 
   function resolveFunction(port) {
     port.start();
-    return async (type, callPath, argumentsList) =>{
+    return async (type, callPath, argumentsList) => {
       const response = await pingPongMessage(
         port,
         {
           type,
           callPath,
-          argumentsList
+          argumentsList,
         },
         transferableProperties(argumentsList)
       );
       // TODO could make CONSTRUCT not a special case, by returning it in the
       // __transfer_proxy_port form.
-      if(type === 'CONSTRUCT') {
+      if (type === 'CONSTRUCT')
         return newBatchingProxy(resolveFunction(response.data.result.port));
-      }
       return hydrateTransferProxies(response.data.result);
-    }
+    };
   }
 
   class Tasklets {
@@ -115,7 +116,7 @@
       const response = await pingPongMessage(this._worker, {
         path,
       });
-      if('error' in response.data) {
+      if ('error' in response.data) {
         console.error(response.data.stack);
         throw Error(response.data.error);
       }
@@ -129,7 +130,7 @@
     }
   }
 
-  const scriptURL = new URL("tasklet-worker-scope.js", document.currentScript.src);
+  const scriptURL = new URL('tasklet-worker-scope.js', document.currentScript.src);
   const worker = new Worker(scriptURL.toString());
   self.tasklets = new Tasklets(worker);
 })();

@@ -13,7 +13,6 @@
 tasklets = {};
 
 (function() {
-
   const transferProxySymbol = Symbol('transferProxy');
 
   tasklets.transferProxy = (obj) => {
@@ -30,7 +29,7 @@ tasklets = {};
     exportObject(obj, port1);
     return {
       result: {'__transfer_proxy_port': port2},
-      transferables: [port2]
+      transferables: [port2],
     };
   }
 
@@ -55,15 +54,17 @@ tasklets = {};
 
   function isTransferable(thing) {
     return (thing instanceof ArrayBuffer) ||
-      (thing instanceof MessagePort)
+      (thing instanceof MessagePort);
   }
 
-  function *iterateAllProperties(obj) {
-    if(typeof obj === 'string') return obj;
-    if(!obj) return;
+  function* iterateAllProperties(obj) {
+    if (typeof obj === 'string')
+      return obj;
+    if (!obj)
+      return;
     const vals = Object.values(obj);
     yield* vals;
-    for(const val of vals)
+    for (const val of vals)
       yield* iterateAllProperties(val);
   }
 
@@ -75,11 +76,11 @@ tasklets = {};
   function exportObject(rootObj, port) {
     port.onmessage = async event => {
       const callPath = event.data.callPath;
-      switch(event.data.type) {
+      switch (event.data.type) {
         case 'GET':
         case 'APPLY': {
           let obj = await callPath.reduce((obj, propName) => obj[propName], rootObj);
-          if(event.data.type === 'APPLY') {
+          if (event.data.type === 'APPLY') {
             callPath.pop();
             const that = await callPath.reduce((obj, propName) => obj[propName], rootObj);
             obj = await obj.apply(that, event.data.argumentsList);
@@ -105,14 +106,15 @@ tasklets = {};
           break;
         }
       }
-    }
+    };
   }
 
   addEventListener('message', event => {
     try {
       const obj = {};
       self.tasklets.export = (thing, name = '') => {
-        if(!name) name = thing.name;
+        if (!name)
+          name = thing.name;
         obj[name] = thing;
       };
       importScripts(event.data.path);
@@ -124,7 +126,7 @@ tasklets = {};
         id: event.data.id,
         port: port2,
       }, [port2]);
-    } catch(error) {
+    } catch (error) {
       postMessage({
         id: event.data.id,
         error: error.toString(),
@@ -132,5 +134,4 @@ tasklets = {};
       });
     }
   });
-
 })();
