@@ -67,8 +67,13 @@
   function* iterateAllProperties(obj) {
     if (!obj)
       return;
-    const vals = Object.values(obj);
-    yield* vals;
+    if (typeof obj === 'string')
+      return;
+    yield obj;
+    let vals = Object.values(obj);
+    if (Array.isArray(obj))
+      vals = obj;
+
     for (const val of vals)
       yield* iterateAllProperties(val);
   }

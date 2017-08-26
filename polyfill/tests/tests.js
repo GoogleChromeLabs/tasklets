@@ -21,6 +21,11 @@ describe('Tasklet Polyfill', function() {
     expect(await tasklet.simpleFunction()).to.equal(42);
   });
 
+  it('can invoke an exported function with parameters', async function() {
+    const tasklet = await tasklets.addModule('/base/tests/fixtures/simple_function.js');
+    expect(await tasklet.concatenatesParameters(1, "asdf")).to.equal("1asdf");
+  });
+
   it('can instantiate an exported class', async function() {
     const tasklet = await tasklets.addModule('/base/tests/fixtures/simple_class.js');
     const instance = await new tasklet.SimpleClass();

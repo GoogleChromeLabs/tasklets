@@ -2,6 +2,10 @@ tasklets.export(function simpleFunction() {
   return 42;
 });
 
+tasklets.export(function concatenatesParameters(num, str) {
+  return num + str;
+});
+
 tasklets.export(function takesABuffer(buffer) {
   return buffer.byteLength;
 });
