@@ -11,7 +11,7 @@ function asyncGeneratorSupport() {
 
 function forAwaitSupport() {
   try {
-    eval(`for await(const i of []){}`)
+    eval(`async function f() {for await(const i of []){}}`)
   } catch (e) {
     return false;
   }
@@ -221,6 +221,15 @@ describe('Tasklet Polyfill', function() {
 
         let counter = 1;
         for await(let i of it) {
+          expect(i).to.equal(counter++);
+        }
+      });
+
+      it('can invoke an exported generator with for-await without a temp variable', async function() {
+        const tasklet = await tasklets.addModule('/base/tests/fixtures/simple_function.js');
+
+        let counter = 1;
+        for await(let i of await tasklet.generator()) {
           expect(i).to.equal(counter++);
         }
       });
