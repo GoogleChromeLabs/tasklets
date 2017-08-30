@@ -194,10 +194,10 @@ describe('Tasklet Polyfill', function() {
         const tasklet = await tasklets.addModule('/base/tests/fixtures/simple_function.js');
         const it = await tasklet.generator();
 
-        expect((await it.next()).value).to.equal(1);
-        expect((await it.next()).value).to.equal(2);
-        expect((await it.next()).value).to.equal(3);
-        expect((await it.next()).value).to.equal(4);
+        expect(await it.next()).to.deep.equal({value: 1, done: false});
+        expect(await it.next()).to.deep.equal({value: 2, done: false});
+        expect(await it.next()).to.deep.equal({value: 3, done: false});
+        expect(await it.next()).to.deep.equal({value: 4, done: false});
         expect((await it.next()).done).to.equal(true);
       });
 
@@ -206,10 +206,18 @@ describe('Tasklet Polyfill', function() {
         const it = await tasklet.lengthCountingGenerator();
 
         await it.next();
-        expect((await it.next('1')).value).to.equal(1);
-        expect((await it.next('22')).value).to.equal(2);
-        expect((await it.next('333')).value).to.equal(3);
+        expect(await it.next('1')).to.deep.equal({value: 1, done: false});
+        expect(await it.next('22')).to.deep.equal({value: 2, done: false});
+        expect(await it.next('333')).to.deep.equal({value: 3, done: false});
         expect((await it.next('')).done).to.equal(true);
+      });
+
+      it('can resolve an async iterator that yielded a promise', async function() {
+        const tasklet = await tasklets.addModule('/base/tests/fixtures/simple_function.js');
+        const it = await tasklet.yieldsAPromise();
+
+        expect(await it.next()).to.deep.equal({value: 42, done: false});
+        expect((await it.next()).done).to.equal(true);
       });
     `);
 

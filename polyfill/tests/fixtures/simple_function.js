@@ -30,6 +30,12 @@ if (asyncGeneratorSupport())
         str = yield str.length;
       }
     });
+
+    tasklets.export(async function* yieldsAPromise() {
+      yield new Promise(resolve => {
+        setTimeout(_ => resolve(42), 100);
+      });
+    });
   `);
 
 tasklets.export(function takesABuffer(buffer) {
