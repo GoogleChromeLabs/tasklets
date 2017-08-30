@@ -28,6 +28,10 @@
     });
   }
 
+  function asyncIteratorSupport() {
+    return 'asyncIterator' in Symbol;
+  }
+
   function newBatchingProxy(cb) {
     let callPath = [];
     return new Proxy(function() {}, {
@@ -47,6 +51,10 @@
         // function. This works. Sorry.
         if (property === 'then' && callPath.length === 0) {
           return {then: _ => proxy};
+        } else if (asyncIteratorSupport() && property === Symbol.asyncIterator) {
+          // For now, only async generators use `Symbol.asyncIterator` and they
+          // return themselves, so we emulate that behavior here.
+          return _ => proxy;
         } else if (property === 'then') {
           const r = cb('GET', callPath);
           callPath = [];

@@ -1,5 +1,23 @@
 const expect = chai.expect;
 
+function asyncGeneratorSupport() {
+  try {
+    eval(`async function* f(){}`)
+  } catch (e) {
+    return false;
+  }
+  return true;
+}
+
+function forAwaitSupport() {
+  try {
+    eval(`for await(const i of []){}`)
+  } catch (e) {
+    return false;
+  }
+  return true;
+}
+
 describe('Tasklet Polyfill', function() {
   beforeEach(function(done) {
     const script = document.createElement('script');
@@ -169,4 +187,42 @@ describe('Tasklet Polyfill', function() {
     const tasklet = await tasklets.addModule('/base/tests/fixtures/simple_function.js');
     expect(await tasklet.doesAFetch()).to.have.string('Ohai');
   });
+
+  if (asyncGeneratorSupport())
+    eval(`
+      it('can invoke an exported generator manually', async function() {
+        const tasklet = await tasklets.addModule('/base/tests/fixtures/simple_function.js');
+        const it = await tasklet.generator();
+
+        expect((await it.next()).value).to.equal(1);
+        expect((await it.next()).value).to.equal(2);
+        expect((await it.next()).value).to.equal(3);
+        expect((await it.next()).value).to.equal(4);
+        expect((await it.next()).done).to.equal(true);
+      });
+
+      it('can invoke an exported generator manually with values', async function() {
+        const tasklet = await tasklets.addModule('/base/tests/fixtures/simple_function.js');
+        const it = await tasklet.lengthCountingGenerator();
+
+        await it.next();
+        expect((await it.next('1')).value).to.equal(1);
+        expect((await it.next('22')).value).to.equal(2);
+        expect((await it.next('333')).value).to.equal(3);
+        expect((await it.next('')).done).to.equal(true);
+      });
+    `);
+
+  if (asyncGeneratorSupport() && forAwaitSupport())
+    eval(`
+      it('can invoke an exported generator with for-await', async function() {
+        const tasklet = await tasklets.addModule('/base/tests/fixtures/simple_function.js');
+        const it = await tasklet.generator();
+
+        let counter = 1;
+        for await(let i of it) {
+          expect(i).to.equal(counter++);
+        }
+      });
+    `);
 });

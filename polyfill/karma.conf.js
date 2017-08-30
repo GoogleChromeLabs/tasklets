@@ -30,8 +30,12 @@ const configuration = {
     autoWatch: true,
     singleRun: true,
     concurrency: Infinity,
-    browsers: ['Chrome', 'Firefox', 'Safari'],
+    browsers: ['Chrome', 'ChromeCanaryHarmony', 'Firefox', 'Safari'],
     customLaunchers: {
+      ChromeCanaryHarmony: {
+        base: 'ChromeCanary',
+        flags: ['--js-flags=--harmony'],
+      },
       DockerChrome: {
           base: 'ChromeHeadless',
           flags: ['--no-sandbox'],

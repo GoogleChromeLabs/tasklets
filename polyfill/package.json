@@ -6,7 +6,7 @@
     "test": "npm run linter && npm run unittest",
     "unittest": "karma start",
     "linter": "eslint .",
-    "watchtest": "karma start --no-single-run --browsers Chrome",
+    "watchtest": "karma start --no-single-run --browsers ChromeHeadless",
     "build": "babili -o tasklet-worker-scope.min.js tasklet-worker-scope.js && babili tasklet-polyfill.js | sed  's/tasklet-worker-scope.js/tasklet-worker-scope.min.js/' > tasklet-polyfill.min.js"
   },
   "keywords": [],
