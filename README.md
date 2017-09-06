@@ -22,7 +22,7 @@ more ergonomic solution with Tasklets.
 __Note__: APIs described below are just strawperson proposals. We think they're pretty cool but
     there's always room for improvement.
 
-**TL,DR:**
+**TL;DR:**
 
 ```js
 // fetcher.js
