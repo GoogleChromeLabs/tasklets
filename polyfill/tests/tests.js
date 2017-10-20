@@ -1,5 +1,23 @@
 const expect = chai.expect;
 
+function asyncGeneratorSupport() {
+  try {
+    eval(`async function* f(){}`)
+  } catch (e) {
+    return false;
+  }
+  return true;
+}
+
+function forAwaitSupport() {
+  try {
+    eval(`async function f() {for await(const i of []){}}`)
+  } catch (e) {
+    return false;
+  }
+  return true;
+}
+
 describe('Tasklet Polyfill', function() {
   beforeEach(function(done) {
     const script = document.createElement('script');
@@ -169,4 +187,59 @@ describe('Tasklet Polyfill', function() {
     const tasklet = await tasklets.addModule('/base/tests/fixtures/simple_function.js');
     expect(await tasklet.doesAFetch()).to.have.string('Ohai');
   });
+
+  if (asyncGeneratorSupport())
+    eval(`
+      it('can invoke an exported generator manually', async function() {
+        const tasklet = await tasklets.addModule('/base/tests/fixtures/simple_function.js');
+        const it = await tasklet.generator();
+
+        expect(await it.next()).to.deep.equal({value: 1, done: false});
+        expect(await it.next()).to.deep.equal({value: 2, done: false});
+        expect(await it.next()).to.deep.equal({value: 3, done: false});
+        expect(await it.next()).to.deep.equal({value: 4, done: false});
+        expect((await it.next()).done).to.equal(true);
+      });
+
+      it('can invoke an exported generator manually with values', async function() {
+        const tasklet = await tasklets.addModule('/base/tests/fixtures/simple_function.js');
+        const it = await tasklet.lengthCountingGenerator();
+
+        await it.next();
+        expect(await it.next('1')).to.deep.equal({value: 1, done: false});
+        expect(await it.next('22')).to.deep.equal({value: 2, done: false});
+        expect(await it.next('333')).to.deep.equal({value: 3, done: false});
+        expect((await it.next('')).done).to.equal(true);
+      });
+
+      it('can resolve an async iterator that yielded a promise', async function() {
+        const tasklet = await tasklets.addModule('/base/tests/fixtures/simple_function.js');
+        const it = await tasklet.yieldsAPromise();
+
+        expect(await it.next()).to.deep.equal({value: 42, done: false});
+        expect((await it.next()).done).to.equal(true);
+      });
+    `);
+
+  if (asyncGeneratorSupport() && forAwaitSupport())
+    eval(`
+      it('can invoke an exported generator with for-await', async function() {
+        const tasklet = await tasklets.addModule('/base/tests/fixtures/simple_function.js');
+        const it = await tasklet.generator();
+
+        let counter = 1;
+        for await(let i of it) {
+          expect(i).to.equal(counter++);
+        }
+      });
+
+      it('can invoke an exported generator with for-await without a temp variable', async function() {
+        const tasklet = await tasklets.addModule('/base/tests/fixtures/simple_function.js');
+
+        let counter = 1;
+        for await(let i of await tasklet.generator()) {
+          expect(i).to.equal(counter++);
+        }
+      });
+    `);
 });

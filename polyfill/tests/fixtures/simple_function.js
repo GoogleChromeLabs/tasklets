@@ -1,3 +1,12 @@
+function asyncGeneratorSupport() {
+  try {
+    eval(`async function* f(){}`)
+  } catch (e) {
+    return false;
+  }
+  return true;
+}
+
 tasklets.export(function simpleFunction() {
   return 42;
 });
@@ -5,6 +14,29 @@ tasklets.export(function simpleFunction() {
 tasklets.export(function concatenatesParameters(num, str) {
   return num + str;
 });
+
+if (asyncGeneratorSupport())
+  eval(`
+    tasklets.export(async function* generator() {
+      yield 1;
+      yield 2;
+      yield 3;
+      yield 4;
+    });
+
+    tasklets.export(async function* lengthCountingGenerator() {
+      let str = yield;
+      while(str !== '') {
+        str = yield str.length;
+      }
+    });
+
+    tasklets.export(async function* yieldsAPromise() {
+      yield new Promise(resolve => {
+        setTimeout(_ => resolve(42), 100);
+      });
+    });
+  `);
 
 tasklets.export(function takesABuffer(buffer) {
   return buffer.byteLength;

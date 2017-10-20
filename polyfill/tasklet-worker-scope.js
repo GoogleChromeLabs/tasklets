@@ -86,7 +86,12 @@ tasklets = {};
           if (event.data.type === 'APPLY') {
             callPath.pop();
             const that = await callPath.reduce((obj, propName) => obj[propName], rootObj);
+            const isAsyncGenerator = obj.constructor.name === 'AsyncGeneratorFunction';
             obj = await obj.apply(that, event.data.argumentsList);
+            // If the function being called is an async generator, proxy the
+            // result.
+            if (isAsyncGenerator)
+              obj = tasklets.transferProxy(obj);
           }
           const {result, transferables} = prepareResult(obj);
           port.postMessage({
