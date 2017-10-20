@@ -104,7 +104,7 @@ of the page.
 
 However, when this module is loaded, the browser will look into the script you imported and find all
 of the __exported__ classes and functions. In the above example we only exported the `Speaker`
-class.
+class and the `add` function.
 
 `addModule` returns a "namespace" object, for which the browser creates "proxy" constructors and
 functions:
