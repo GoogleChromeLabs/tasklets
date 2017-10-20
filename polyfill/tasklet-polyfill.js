@@ -36,7 +36,16 @@
         callPath = [];
         return r;
       },
-      async apply(_, __, argumentsList, proxy) {
+      apply(_, __, argumentsList, proxy) {
+        // We use `bind` as an indicator to have a remote function bound locally.
+        // The actual target for `bind()` is currently ignored.
+        if(callPath[callPath.length - 1] === 'bind') {
+          const localCallPath = callPath.slice();
+          callPath = [];
+          return (...args) => {
+            return cb('APPLY', localCallPath.slice(0, -1), args);
+          }
+        }
         const r = cb('APPLY', callPath, argumentsList);
         callPath = [];
         return r;
