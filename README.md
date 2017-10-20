@@ -1,3 +1,5 @@
+**Note:** The tasklets proposal spawned the [Comlink](https://github.com/GoogleChromeLabs/comlink) library. It’s an RPC library that extracts the ergonomics feature from tasklets.
+
 # Problem
 Most modern development platforms favor a multi-threaded approach by default. Typically, the split
 for work is:
