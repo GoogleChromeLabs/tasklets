@@ -7,6 +7,7 @@ const configuration = {
         pattern: '*.txt',
         included: false,
       },
+      'comlink.global.min.js',
       {
         pattern: 'tasklet-polyfill.js',
         included: false,
