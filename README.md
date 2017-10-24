@@ -19,7 +19,7 @@ As a result, worker adoption has been minimal at best and the default model rema
 on the main thread. In order to encourage developers to move work off the main thread, we propose a
 more ergonomic solution with Tasklets.
 
-# Tasklet API
+# Tasklets API
 
 __Note__: APIs described below are just strawperson proposals. We think they're pretty cool but
     there's always room for improvement.
@@ -37,7 +37,7 @@ export async function fetchDataObject() {
 
 ```js
 // app.js
-const fetcher = await tasklet.addModule('fetcher.js');
+const fetcher = await tasklets.addModule('fetcher.js');
 const json = await fetcher.fetchDataObject();
 // ...
 ```
@@ -64,13 +64,13 @@ self.addEventListener('message', (evt) => {
 });
 ```
 
-A switch statement in the worker then typically routes messages to the correct API. The tasklet API
+A switch statement in the worker then typically routes messages to the correct API. The Tasklets API
 exposes this behavior natively, by allowing a class within one context to expose methods to other
 contexts.
 
 ## Exported classes and functions
 
-The code below shows a basic example of the tasklet API.
+The code below shows a basic example of the Tasklets API.
 
 ```js
 // speaker.js
@@ -86,7 +86,7 @@ export function add(a, b) {
 ```
 
 ```js
-const module = await tasklet.addModule('speaker.js');
+const module = await tasklets.addModule('speaker.js');
 
 const speaker = await new module.Speaker();
 console.log(await speaker.sayHello('world!')); // Logs "Hello world!".
@@ -97,7 +97,7 @@ console.log(await module.add(2, 3)); // Logs '5'.
 A few things are happening here, so let's step through them individually.
 
 ```js
-const module = await tasklet.addModule('speaker.js');
+const module = await tasklets.addModule('speaker.js');
 ```
 
 This loads the module into the tasklet's JavaScript global scope. This is similar to invoking
@@ -188,7 +188,7 @@ export class FetchManager extends EventTarget {
 ```
 
 ```js
-const api = await tasklet.addModule('api.js');
+const api = await tasklets.addModule('api.js');
 const fetchManager = await new api.FetchManager();
 fetchManager.addEventListener('image-fetched', () => {
   // maybe update some UI?
@@ -229,7 +229,7 @@ export class CalendarEntry {
 
 ```js
 // main.js
-const {Calendar} = await tasklet.addModule('calendarTasklet.js');
+const {Calendar} = await tasklets.addModule('calendarTasklet.js');
 const myCalendar = await new Calendar(myCredentials);
 const events = await myCalendar.nextEvents();
 events.map(event => myCalender.generateShareLink(event.id)); // !!!
