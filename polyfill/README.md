@@ -2,7 +2,7 @@
 This polyfill strives to implement a proposed Tasklet API as best as possible using the technologies currently available on the web.
 
 ## Usage
-`tasklet-polyfill.js` and `tasklet-worker-scope.js` need to be place in the _same_ directory. Then include `tasklet-polyfill.js` and start using the Tasklet API:
+`comlink.global.min.js`, `tasklet-polyfill.js` and `tasklet-worker-scope.js` need to be place in the _same_ directory. Then include `tasklet-polyfill.js` and start using the Tasklet API:
 
 ```js
 // my-tasklet.js
@@ -45,14 +45,6 @@ tasklets.export(function takesABuffer(buf) {
 
 ## Bugs, flaws, open feature requests
 
-- Even the `new` operator needs `await`!
-
-```js
-const tasklet = await tasklets.addModule('/my-tasklet.js');
-const instance = await new tasklet.MyClass();
-// ...
-```
-
 - `tasklet.addModule()` only takes _absolute_ paths for now
 - Because no browser has support for native ES6 modules in workers, we had to improvise a bit:
 
@@ -72,7 +64,6 @@ tasklets.export(MyClass);
 tasklets.export({a: 4, b: 5}, 'MyObj');
 ```
 
-- No support for iterators or async iterators
 - When using object as a return value, it will be structurally cloned by default. To proxy the returned object instead, wrap the return value in `transferProxy()`:
 
 ```js
@@ -95,7 +86,7 @@ tasklets.export(function withProxy() {
 });
 ```
 
-For more examples, read through the tests!
+For more examples, head over to the [Comlink repository](https://github.com/GoogleChromeLabs/comlink)
 
 
 
