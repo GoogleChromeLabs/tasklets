@@ -1,6 +1,6 @@
 # JavaScript integration
 
-We think it'd be nice if there was first class JavaScript support for the tasklet API, here is one
+We think it'd be nice if there was first class JavaScript support for the tasklets API, here is one
 reasonably simple proposal:
 
 ```js
